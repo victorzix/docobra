@@ -14,10 +14,6 @@ export async function resolveSessionAction(token: string | undefined): Promise<S
     return { action: "redirect" };
   }
 
-  // Aguarda 1 segundo para garantir que a token renovada tem um iat diferente
-  // (jose usa precisão de segundos para iat)
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
   const novoToken = await assinarToken({
     userId: payload.userId,
     empresaId: payload.empresaId,

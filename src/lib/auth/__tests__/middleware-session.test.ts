@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assinarToken } from "@/lib/auth/jwt";
+import { assinarToken, verificarToken } from "@/lib/auth/jwt";
 import { resolveSessionAction } from "@/lib/auth/middleware-session";
 
 describe("resolveSessionAction", () => {
@@ -17,8 +17,8 @@ describe("resolveSessionAction", () => {
 
     expect(resultado.action).toBe("allow");
     if (resultado.action === "allow") {
-      expect(typeof resultado.novoToken).toBe("string");
-      expect(resultado.novoToken).not.toBe(token);
+      const novoPayload = await verificarToken(resultado.novoToken);
+      expect(novoPayload).toMatchObject({ userId: "u1", empresaId: "e1", papel: "admin" });
     }
   });
 });
