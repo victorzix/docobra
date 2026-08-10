@@ -4,6 +4,7 @@ import { empresa } from "./empresa";
 
 export const usuario = pgTable("usuario", {
   id: uuid("id").defaultRandom().primaryKey(),
+  nome: varchar("nome", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   senhaHash: varchar("senha_hash", { length: 255 }).notNull(),
   empresaId: uuid("empresa_id")
