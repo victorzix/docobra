@@ -16,7 +16,7 @@ function criarProviderFake(
     extractStructured: vi.fn(async () => {
       if (comportamento.tipo === "falha") throw comportamento.erro;
       return comportamento.resultado;
-    }),
+    }) as unknown as LLMProvider["extractStructured"],
   };
 
   if (comTranscricao) {

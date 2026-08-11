@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import { resolverOrdem } from "../config";
-import type { LLMProvider } from "../types";
+import type { LLMProvider, StructuredExtractionResult } from "../types";
 
 function providerFake(nome: string): LLMProvider {
   return {
     name: nome,
-    extractStructured: async () => ({ data: {}, provider: nome, raw: {} }),
+    extractStructured: async <T = unknown>(): Promise<StructuredExtractionResult<T>> => ({
+      data: {} as T,
+      provider: nome,
+      raw: {},
+    }),
   };
 }
 
