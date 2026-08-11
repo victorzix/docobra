@@ -30,7 +30,11 @@ export function LoginForm() {
 
   function onSubmit(values: LoginInput) {
     logar.mutate(values, {
-      onSuccess: () => router.push(searchParams.get("from") ?? "/dashboard"),
+      onSuccess: () => {
+        const from = searchParams.get("from");
+        const destino = from?.startsWith("/") && !from.startsWith("//") ? from : "/dashboard";
+        router.push(destino);
+      },
     });
   }
 
