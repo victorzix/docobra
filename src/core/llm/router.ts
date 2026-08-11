@@ -3,6 +3,7 @@ import type {
   StructuredExtractionRequest,
   StructuredExtractionResult,
 } from "./types";
+import { LLMValidationError } from "./types";
 
 export class LLMRouter {
   constructor(private readonly providers: LLMProvider[]) {}
@@ -10,6 +11,13 @@ export class LLMRouter {
   async extractStructured<T = unknown>(
     req: StructuredExtractionRequest,
   ): Promise<StructuredExtractionResult<T>> {
+    if (!req.userPrompt.trim()) {
+      throw new LLMValidationError("userPrompt vazio.");
+    }
+    if (!req.schema || Object.keys(req.schema).length === 0) {
+      throw new LLMValidationError("schema vazio.");
+    }
+
     let lastError: unknown;
 
     for (const provider of this.providers) {

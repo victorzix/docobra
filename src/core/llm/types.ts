@@ -19,3 +19,5 @@ export interface LLMProvider {
   ): Promise<StructuredExtractionResult<T>>;
   transcribeAudio?(audio: Buffer, mimeType: string): Promise<string>;
 }
+
+export class LLMValidationError extends Error {}
