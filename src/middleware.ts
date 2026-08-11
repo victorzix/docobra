@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { resolveSessionAction } from "@/lib/auth/middleware-session";
-import { SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from "@/lib/auth/constants";
+import { SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS } from "@/lib/auth/constants";
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
@@ -16,12 +16,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next();
-  response.cookies.set(SESSION_COOKIE_NAME, resultado.novoToken, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_MAX_AGE_SECONDS,
-  });
+  response.cookies.set(SESSION_COOKIE_NAME, resultado.novoToken, SESSION_COOKIE_OPTIONS);
   return response;
 }
 

@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { usuario } from "@/db/schema";
 import { verificarSenha } from "@/lib/auth/password";
 import { assinarToken } from "@/lib/auth/jwt";
-import { SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from "@/lib/auth/constants";
+import { SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS } from "@/lib/auth/constants";
 import { loginSchema } from "@/lib/validations/auth/login.schema";
 
 const CREDENCIAIS_INVALIDAS = { error: "Email ou senha incorretos." };
@@ -48,12 +48,7 @@ export async function POST(request: Request) {
         papel: encontrado.papel,
       },
     });
-    response.cookies.set(SESSION_COOKIE_NAME, token, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: SESSION_MAX_AGE_SECONDS,
-    });
+    response.cookies.set(SESSION_COOKIE_NAME, token, SESSION_COOKIE_OPTIONS);
     return response;
   } catch (error) {
     console.error("[POST /api/auth/login]", error);

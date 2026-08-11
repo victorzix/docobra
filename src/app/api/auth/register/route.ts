@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { empresa, usuario } from "@/db/schema";
 import { hashSenha } from "@/lib/auth/password";
 import { assinarToken } from "@/lib/auth/jwt";
-import { SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from "@/lib/auth/constants";
+import { SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS } from "@/lib/auth/constants";
 import { registerSchema } from "@/lib/validations/auth/register.schema";
 
 function isUniqueViolation(error: unknown): boolean {
@@ -78,12 +78,7 @@ export async function POST(request: Request) {
       },
       { status: 201 },
     );
-    response.cookies.set(SESSION_COOKIE_NAME, token, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: SESSION_MAX_AGE_SECONDS,
-    });
+    response.cookies.set(SESSION_COOKIE_NAME, token, SESSION_COOKIE_OPTIONS);
     return response;
   } catch (error) {
     console.error("[POST /api/auth/register]", error);
