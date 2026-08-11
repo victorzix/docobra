@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth/session";
 import { buscarNomesUsuarioEEmpresa } from "@/db/queries/usuario";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
@@ -7,9 +8,11 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const sessao = await getSessionUser();
   const nomes = sessao ? await buscarNomesUsuarioEEmpresa(sessao.userId) : null;
+  const cookieStore = await cookies();
+  const sidebarAberta = cookieStore.get("sidebar_state")?.value !== "false";
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={sidebarAberta}>
       <DashboardSidebar
         footer={
           nomes && <UserMenu usuarioNome={nomes.usuarioNome} empresaNome={nomes.empresaNome} />
@@ -19,7 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <header className="flex h-14 items-center border-b px-4">
           <SidebarTrigger />
         </header>
-        <main className="p-6">{children}</main>
+        <div className="p-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );
