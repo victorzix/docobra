@@ -37,6 +37,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# claude code local settings
+.claude/settings.local.json
+
+# subagent-driven-development workspace (ledger, briefs, review packages)
+.superpowers/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
