@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { projeto } from "@/db/schema";
@@ -32,4 +32,13 @@ export async function criarProjeto(input: {
 }): Promise<Projeto> {
   const [criado] = await db.insert(projeto).values(input).returning(CAMPOS_PROJETO);
   return criado;
+}
+
+export async function buscarProjetoDaEmpresa(id: string, empresaId: string): Promise<Projeto | null> {
+  const [resultado] = await db
+    .select(CAMPOS_PROJETO)
+    .from(projeto)
+    .where(and(eq(projeto.id, id), eq(projeto.empresaId, empresaId)))
+    .limit(1);
+  return resultado ?? null;
 }

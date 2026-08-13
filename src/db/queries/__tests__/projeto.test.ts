@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { db } from "@/db";
 import { empresa, projeto } from "@/db/schema";
-import { criarProjeto, listarProjetos } from "../projeto";
+import { buscarProjetoDaEmpresa, criarProjeto, listarProjetos } from "../projeto";
 
 async function limparBanco() {
   await db.delete(projeto);
@@ -70,5 +70,29 @@ describe("listarProjetos", () => {
     const resultado = await listarProjetos(novaEmpresa.id);
 
     expect(resultado).toEqual([]);
+  });
+});
+
+describe("buscarProjetoDaEmpresa", () => {
+  beforeEach(limparBanco);
+  afterEach(limparBanco);
+
+  it("retorna o projeto quando pertence à empresa", async () => {
+    const [novaEmpresa] = await db.insert(empresa).values({ nome: "Ancar Engenharia" }).returning();
+    const criado = await criarProjeto({ nome: "Casa da Praia", empresaId: novaEmpresa.id });
+
+    const resultado = await buscarProjetoDaEmpresa(criado.id, novaEmpresa.id);
+
+    expect(resultado?.id).toBe(criado.id);
+  });
+
+  it("retorna null quando o projeto é de outra empresa", async () => {
+    const [empresaA] = await db.insert(empresa).values({ nome: "Empresa A" }).returning();
+    const [empresaB] = await db.insert(empresa).values({ nome: "Empresa B" }).returning();
+    const criado = await criarProjeto({ nome: "Casa da Praia", empresaId: empresaA.id });
+
+    const resultado = await buscarProjetoDaEmpresa(criado.id, empresaB.id);
+
+    expect(resultado).toBeNull();
   });
 });
