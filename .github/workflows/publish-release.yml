@@ -1,0 +1,27 @@
+name: Publish release to portfolio
+
+# Publica o registro do projeto e o histórico de versões no portfólio sempre que
+# algo em content/ (ou o próprio script) chega na main. O PUT é idempotente, então
+# republicar não duplica — corrige. Também dá pra rodar manualmente (workflow_dispatch).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "content/**"
+      - "scripts/publish-releases.mjs"
+      - ".github/workflows/publish-release.yml"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # O script só usa built-ins do Node + fetch global — sem npm install.
+      - run: node scripts/publish-releases.mjs
+        env:
+          PORTFOLIO_API_URL: ${{ secrets.PORTFOLIO_API_URL }}
+          CHANGELOG_API_TOKEN: ${{ secrets.CHANGELOG_API_TOKEN }}

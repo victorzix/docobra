@@ -1,0 +1,43 @@
+{
+  "version": "1.0.0",
+  "releasedAt": "2026-08-11T12:00:00Z",
+  "title": {
+    "en": "Authentication and the multi-provider LLM core",
+    "pt": "Autenticação e o núcleo multi-provider de LLM",
+    "es": "Autenticación y el núcleo multi-proveedor de LLM"
+  },
+  "changes": [
+    {
+      "type": "added",
+      "text": {
+        "en": "User authentication — register, login, logout, and a protected dashboard behind session middleware",
+        "pt": "Autenticação de usuário — cadastro, login, logout e um dashboard protegido por middleware de sessão",
+        "es": "Autenticación de usuario — registro, inicio de sesión, cierre de sesión y un panel protegido por middleware de sesión"
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "A multi-provider LLM layer with a Gemini→Claude fallback order that is configurable per use case",
+        "pt": "Uma camada de LLM multi-provider com ordem de fallback Gemini→Claude configurável por caso de uso",
+        "es": "Una capa de LLM multi-proveedor con orden de fallback Gemini→Claude configurable por caso de uso"
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "Structured extraction via JSON-schema outputs, validating each request before any provider is called",
+        "pt": "Extração estruturada via saídas com JSON Schema, validando cada requisição antes de acionar qualquer provider",
+        "es": "Extracción estructurada mediante salidas con JSON Schema, validando cada solicitud antes de llamar a cualquier proveedor"
+      }
+    },
+    {
+      "type": "fixed",
+      "text": {
+        "en": "Hardened auth: secure production cookies, normalized email casing, and open-redirect protection on login",
+        "pt": "Autenticação reforçada: cookies seguros em produção, normalização de caixa do e-mail e proteção contra open redirect no login",
+        "es": "Autenticación reforzada: cookies seguras en producción, normalización de mayúsculas del correo y protección contra open redirect en el inicio de sesión"
+      }
+    }
+  ]
+}

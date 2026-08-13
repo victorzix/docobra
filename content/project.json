@@ -1,0 +1,19 @@
+{
+  "slug": "docobra",
+  "name": "DocObra",
+  "description": {
+    "en": "AI assistant for engineers and architects: generates ABNT technical memorials and turns city-hall requirements into plain-language checklists.",
+    "pt": "Assistente de IA para engenheiros e arquitetos: gera memoriais descritivos em ABNT e transforma exigências da prefeitura em checklists de linguagem simples.",
+    "es": "Asistente de IA para ingenieros y arquitectos: genera memoriales técnicos en ABNT y convierte las exigencias municipales en checklists en lenguaje simple."
+  },
+  "summary": {
+    "en": "An MVP with two modules behind one login: a **Technical Memorial generator** that turns a short form (optionally voice input) into a full ABNT-formatted document, and a **city-hall requirement translator** that reads a \"Comunique-se\" PDF and returns a plain-language task checklist. Every AI call goes through a multi-provider layer that defaults to Gemini and falls back to Claude, with the order configurable per use case.",
+    "pt": "MVP com dois módulos sob um único login: um **gerador de Memorial Descritivo** que transforma um formulário curto (opcionalmente com entrada por voz) em um documento completo formatado em ABNT, e um **tradutor de exigências da prefeitura** que lê um PDF de \"Comunique-se\" e devolve um checklist de tarefas em linguagem simples. Toda chamada de IA passa por uma camada multi-provider que usa Gemini por padrão e cai para o Claude, com a ordem configurável por caso de uso.",
+    "es": "Un MVP con dos módulos tras un único inicio de sesión: un **generador de Memorial Técnico** que convierte un formulario corto (opcionalmente por voz) en un documento completo con formato ABNT, y un **traductor de exigencias municipales** que lee un PDF de \"Comunique-se\" y devuelve un checklist de tareas en lenguaje simple. Cada llamada de IA pasa por una capa multi-proveedor que usa Gemini por defecto y recurre a Claude, con el orden configurable por caso de uso."
+  },
+  "stack": ["Next.js", "TypeScript", "PostgreSQL", "Drizzle"],
+  "status": "wip",
+  "year": 2026,
+  "sortOrder": 0,
+  "repoUrl": "https://github.com/victorzix/docobra"
+}

@@ -161,3 +161,92 @@ para tudo.
 - Não usar anime.js dentro do app/dashboard — está escopado só à landing/
   página de vendas. Se aparecer uma necessidade real de 3D dentro do produto,
   perguntar antes de expandir o escopo.
+
+## Publicar versões no portfólio
+
+O portfólio (repo `portfolio`) tem uma API idempotente de upload; este projeto se
+publica nela como qualquer outro. O conteúdo mora em `content/` para ser versionado
+e revisado como código:
+
+- `content/project.json` — o registro do projeto (slug `docobra`, nome, descrição/
+  summary em `en`/`pt`/`es`, stack, status, ano, links).
+- `content/releases/<versão>.json` — uma versão por arquivo. O **nome do arquivo é a
+  versão** na URL (sem `v`). Cada release tem `title`/`notes` opcionais e uma lista
+  `changes` de mudanças **tipadas** (`added`/`changed`/`fixed`/`removed`/`deprecated`/
+  `security`), tudo localizado em `en`/`pt`/`es` (só `en` é obrigatório; os outros
+  caem em fallback para `en`).
+
+As notas são **curadas para o portfólio** — não é o CHANGELOG.md bruto (gerado por
+`commit-and-tag-version`, nível de commit). Agrupe o barulho de commits em poucas
+linhas legíveis por versão.
+
+Config (em `.env`, nunca commitado — ver `.env.example`):
+
+- `PORTFOLIO_API_URL` — base da API do portfólio. **Prefira HTTPS**: o token vai num
+  header `Authorization: Bearer` e em HTTP puro trafega em texto claro.
+- `CHANGELOG_API_TOKEN` — o mesmo segredo que o servidor do portfólio lê como
+  `CHANGELOG_API_TOKEN` (aceito também como `PORTFOLIO_API_TOKEN`).
+
+Fluxo para adicionar uma versão nova:
+
+1. Crie `content/releases/<nova-versão>.json` (copie um existente como molde).
+2. Se algo do projeto mudou (stack, status, descrição), edite `content/project.json`.
+3. `npm run release:publish -- --dry-run` para conferir o que seria enviado.
+4. Commite e faça push na `main` — a publicação é **automática** (ver abaixo). Se
+   precisar rodar na mão: `npm run release:publish`. O PUT é **idempotente**:
+   reexecutar após corrigir um arquivo conserta o registro em vez de duplicar.
+
+Automação: `.github/workflows/publish-release.yml` roda `publish-releases.mjs`
+sempre que algo em `content/` (ou o script) chega na `main`, e também via
+"Run workflow" manual. Exige dois **secrets** no repo do GitHub (Settings →
+Secrets and variables → Actions): `PORTFOLIO_API_URL` e `CHANGELOG_API_TOKEN`.
+Sem eles, o job falha na autenticação (401) — o secret não é o mesmo que o `.env`
+local, tem que ser cadastrado no GitHub.
+
+### Imagens (todas opcionais)
+
+As imagens **não ficam no repo do docobra** — você referencia por **URL pública
+absoluta**. Hospede o arquivo onde quiser (ex.: `public/` do portfólio, servido em
+`https://<portfolio>/...`, ou qualquer CDN) e coloque a URL no JSON. São três
+lugares, todos opcionais:
+
+1. **Banner (imagem principal)** — em `content/project.json`, chave `bannerImage`.
+2. **Galeria** — em `content/project.json`, chave `gallery` (array). Renderiza como
+   marquee, com lightbox ao clicar.
+3. **Por feature/change** — em `content/releases/<versão>.json`, cada item de
+   `changes` aceita uma chave `image` para ilustrar aquela mudança específica.
+
+Formato do objeto de imagem (só `url` é obrigatório):
+
+```jsonc
+{
+  "url": "https://.../screenshot.png",  // obrigatório (ignorado se videoUrl setado)
+  "frame": "browser",                    // opcional: "browser" | "iphone" | "android" (sem = imagem plana)
+  "videoUrl": "https://.../demo.mp4",    // opcional: toca vídeo em loop no lugar da imagem
+  "alt": { "en": "...", "pt": "...", "es": "..." },     // opcional (acessibilidade)
+  "caption": { "en": "...", "pt": "...", "es": "..." }, // opcional (aparece no lightbox da galeria)
+  "browserUrl": "docobra.app"            // opcional: texto da barra de endereço no frame "browser"
+}
+```
+
+Exemplo em `project.json`:
+
+```jsonc
+{
+  "slug": "docobra",
+  // ...resto do projeto...
+  "bannerImage": { "url": "https://.../dashboard.png", "frame": "browser", "browserUrl": "docobra.app" },
+  "gallery": [
+    { "url": "https://.../memorial.png", "frame": "browser", "caption": { "en": "Memorial generator" } },
+    { "url": "https://.../mobile.png", "frame": "iphone" }
+  ]
+}
+```
+
+Exemplo de `image` num change (em `releases/1.1.0.json`):
+
+```jsonc
+{ "type": "added", "text": { "en": "Voice input" }, "image": { "url": "https://.../voice.png", "frame": "iphone" } }
+```
+
+Depois é o fluxo normal: commit + push → publica automático.
