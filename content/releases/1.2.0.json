@@ -1,0 +1,34 @@
+{
+  "releasedAt": "2026-08-13T19:30:00Z",
+  "title": {
+    "en": "Technical Memorial generator",
+    "pt": "Gerador de Memorial Descritivo",
+    "es": "Generador de Memorial Técnico"
+  },
+  "changes": [
+    {
+      "type": "added",
+      "text": {
+        "en": "The flagship Technical Memorial generator: a short project form — with an optional voice-recording mode instead of typing — that produces a complete, downloadable PDF document formatted to ABNT NBR 14724",
+        "pt": "O gerador de Memorial Descritivo, funcionalidade principal do produto: um formulário curto de projeto — com um modo opcional de gravação de voz no lugar de digitar — que gera um documento PDF completo, para download, formatado conforme a ABNT NBR 14724",
+        "es": "El generador de Memorial Técnico, funcionalidad principal del producto: un formulario corto de proyecto — con un modo opcional de grabación de voz en lugar de escribir — que genera un documento PDF completo, para descarga, formateado según la ABNT NBR 14724"
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "A two-step AI pipeline behind the generator: audio is transcribed and turned into structured data first, then rewritten into formal ABNT technical prose",
+        "pt": "Um pipeline de IA em duas etapas por trás do gerador: o áudio é transcrito e transformado em dados estruturados primeiro, depois reescrito como prosa técnica formal em ABNT",
+        "es": "Un pipeline de IA en dos etapas detrás del generador: el audio se transcribe y convierte en datos estructurados primero, y luego se reescribe como prosa técnica formal en ABNT"
+      }
+    },
+    {
+      "type": "fixed",
+      "text": {
+        "en": "Malformed requests and non-existent memorials now return proper 400/404 responses instead of failing with a generic server error",
+        "pt": "Requisições malformadas e memoriais inexistentes agora retornam respostas 400/404 corretas em vez de falhar com um erro genérico de servidor",
+        "es": "Las solicitudes malformadas y los memoriales inexistentes ahora devuelven respuestas 400/404 correctas en lugar de fallar con un error genérico de servidor"
+      }
+    }
+  ]
+}
