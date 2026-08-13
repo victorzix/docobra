@@ -87,12 +87,14 @@ describe("gerarMemorial", () => {
       })
       .mockResolvedValueOnce({ data: PROSA_FAKE, provider: "fake", raw: {} });
 
+    const audioBase64 = Buffer.from("audio-fake").toString("base64");
+
     const resultado = await gerarMemorial(
       {
         projetoId: novoProjeto.id,
         tipoConstrucao: "residencial",
         modoEspecificacoes: "audio",
-        audioBase64: Buffer.from("audio-fake").toString("base64"),
+        audioBase64,
         audioMimeType: "audio/webm",
       },
       CONTEXTO,
@@ -107,6 +109,8 @@ describe("gerarMemorial", () => {
     expect(linha.respostasFormularioJson).toMatchObject({
       especificacoes: { fundacaoEstrutura: "Radier, concreto armado" },
     });
+    expect(linha.respostasFormularioJson).not.toHaveProperty("audioBase64");
+    expect(JSON.stringify(linha.respostasFormularioJson)).not.toContain(audioBase64);
   });
 
   it("propaga o erro e deixa o registro em rascunho quando o LLM falha", async () => {

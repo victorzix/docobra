@@ -38,6 +38,14 @@ interface EspecificacoesTecnicas {
   acabamentos?: string;
 }
 
+function respostasSemAudio(input: CriarMemorialInput, especificacoes: EspecificacoesTecnicas) {
+  if (input.modoEspecificacoes === "audio") {
+    const { audioBase64, ...resto } = input;
+    return { ...resto, especificacoes };
+  }
+  return { ...input, especificacoes };
+}
+
 export async function gerarMemorial(
   input: CriarMemorialInput,
   contexto: ContextoMemorial,
@@ -47,7 +55,7 @@ export async function gerarMemorial(
 
   const rascunho = await criarMemorialRascunho({
     projetoId: input.projetoId,
-    respostasFormularioJson: { ...input, especificacoes },
+    respostasFormularioJson: respostasSemAudio(input, especificacoes),
   });
 
   let audioUrl: string | undefined;
@@ -93,7 +101,7 @@ export async function gerarMemorial(
   await marcarComoGerado(rascunho.id, {
     documentoGeradoUrl,
     audioUrl,
-    respostasFormularioJson: { ...input, especificacoes },
+    respostasFormularioJson: respostasSemAudio(input, especificacoes),
   });
 
   return { id: rascunho.id, status: "gerado", documentoGeradoUrl };
