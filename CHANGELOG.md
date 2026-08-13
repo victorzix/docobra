@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.1.0](https://github.com/victorzix/docobra/compare/v1.0.0...v1.1.0) (2026-08-13)
+
+### Features
+
+* add buscarNomesUsuarioEEmpresa query ([9572283](https://github.com/victorzix/docobra/commit/957228375fb5e4bf6147fcd68dbee66df5cc7bfe))
+* add dashboard sidebar nav using shadcn Sidebar ([df39cbe](https://github.com/victorzix/docobra/commit/df39cbe187df2b3691e856aa7dafc7922124856f))
+* add dashboard user menu with logout ([3d16dca](https://github.com/victorzix/docobra/commit/3d16dcade4d65913e0f3891c42c598b39b5b5db6))
+* add POST /api/projetos route handler ([730943e](https://github.com/victorzix/docobra/commit/730943eae09aeb933f9f876fb89a06d7e4fe0904))
+* add projeto query layer (criar, listar) ([bf575ee](https://github.com/victorzix/docobra/commit/bf575ee57290d35e656373f086025598696cf5d8))
+* add projetos page with create dialog and nav item ([cf74bf1](https://github.com/victorzix/docobra/commit/cf74bf12a81105a6e17f2c72d55ccc64e1bd5ccb))
+* build authenticated dashboard shell with sidebar and module placeholders ([151198f](https://github.com/victorzix/docobra/commit/151198f0b250386a6fc6d75056c5f1231ae9b6d9))
+
+### Bug Fixes
+
+* **dashboard:** remove nested main landmark and persist sidebar state ([ed410de](https://github.com/victorzix/docobra/commit/ed410de6dcddab81639a876672d16cb89f36f3cb))
+* use useSyncExternalStore in useIsMobile to avoid hydration mismatch ([9013d43](https://github.com/victorzix/docobra/commit/9013d43393dfcae26c587d220deb29cc1aad1984))
+
+### Documentation
+
+* add dashboard shell design spec ([47ea85e](https://github.com/victorzix/docobra/commit/47ea85e854bc001e3b65128ccccbdebcb6733627))
+* add dashboard shell implementation plan ([30aa965](https://github.com/victorzix/docobra/commit/30aa96539bc88255df99a0a986e0b63ad805cfc9))
+* add Projeto CRUD design spec ([4f78193](https://github.com/victorzix/docobra/commit/4f781937f2def263a1584695dd28760a06968c67))
+* add Projeto CRUD implementation plan ([e7a5c49](https://github.com/victorzix/docobra/commit/e7a5c490372e68ac511be6367aa47f399e914a4b))
+
+### Refactoring
+
+* rename middleware.ts to proxy.ts per Next.js 16 convention ([1dac2ae](https://github.com/victorzix/docobra/commit/1dac2ae65f0d6fd30b3140d270dedb374121cbdd))
 ## 1.0.0 (2026-08-11)
 
 ### Features
