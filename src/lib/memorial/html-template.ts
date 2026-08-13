@@ -42,6 +42,9 @@ export function gerarHtmlMemorial(dados: DadosMemorial): string {
       <dt>Empresa</dt><dd>${escapeHtml(dados.empresaNome)}</dd>
       <dt>Responsável</dt><dd>${escapeHtml(dados.usuarioNome)}</dd>
       <dt>Tipo de construção</dt><dd>${escapeHtml(dados.tipoConstrucao)}</dd>
+      ${dados.numeroPavimentos !== undefined ? `<dt>Número de pavimentos</dt><dd>${dados.numeroPavimentos}</dd>` : ""}
+      ${dados.areaConstruida !== undefined ? `<dt>Área construída</dt><dd>${dados.areaConstruida} m²</dd>` : ""}
+      ${dados.areaTerreno !== undefined ? `<dt>Área do terreno</dt><dd>${dados.areaTerreno} m²</dd>` : ""}
     </dl>
     <h2>Descrição geral</h2>
     <p>${escapeHtml(dados.descricaoGeral)}</p>
