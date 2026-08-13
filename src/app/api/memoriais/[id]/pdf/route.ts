@@ -21,5 +21,5 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const pdf = await lerArquivo(`${id}.pdf`);
-  return new NextResponse(pdf, { headers: { "Content-Type": "application/pdf" } });
+  return new NextResponse(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf" } });
 }
