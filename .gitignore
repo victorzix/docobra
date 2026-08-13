@@ -43,6 +43,9 @@ yarn-error.log*
 # subagent-driven-development workspace (ledger, briefs, review packages)
 .superpowers/
 
+# playwright MCP session artifacts (snapshots, console logs)
+.playwright-mcp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

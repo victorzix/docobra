@@ -1,0 +1,42 @@
+{
+  "releasedAt": "2026-08-13T15:45:00Z",
+  "title": {
+    "en": "Dashboard shell and project management",
+    "pt": "Shell do dashboard e gestão de projetos",
+    "es": "Shell del panel y gestión de proyectos"
+  },
+  "changes": [
+    {
+      "type": "added",
+      "text": {
+        "en": "A shared authenticated dashboard shell with sidebar navigation, company/user profile, and a working logout — the layout both product modules will live in",
+        "pt": "Um shell autenticado compartilhado com navegação em sidebar, perfil de empresa/usuário e logout funcional — o layout onde os dois módulos de produto vão viver",
+        "es": "Un shell autenticado compartido con navegación en sidebar, perfil de empresa/usuario y cierre de sesión funcional — el layout donde vivirán los dos módulos del producto"
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "Minimal project management — create and list projects, scoped per company, shared by both the Technical Memorial and city-hall-requirement modules",
+        "pt": "Gestão mínima de projetos — criar e listar, escopado por empresa, compartilhado pelos módulos de Memorial Descritivo e tradução de exigências da prefeitura",
+        "es": "Gestión mínima de proyectos — crear y listar, delimitado por empresa, compartido por los módulos de Memorial Técnico y traducción de exigencias municipales"
+      }
+    },
+    {
+      "type": "changed",
+      "text": {
+        "en": "Migrated from Next.js's deprecated \"middleware\" file convention to the new \"proxy\" convention",
+        "pt": "Migração da convenção depreciada \"middleware\" do Next.js para a nova convenção \"proxy\"",
+        "es": "Migración de la convención obsoleta \"middleware\" de Next.js a la nueva convención \"proxy\""
+      }
+    },
+    {
+      "type": "fixed",
+      "text": {
+        "en": "Removed a hydration mismatch in the sidebar's mobile detection, a duplicated page landmark, and made the sidebar's open/closed state persist across reloads",
+        "pt": "Removida uma inconsistência de hidratação na detecção de mobile da sidebar, um landmark de página duplicado, e o estado aberto/fechado da sidebar agora persiste entre reloads",
+        "es": "Se eliminó una discordancia de hidratación en la detección móvil de la barra lateral, un landmark de página duplicado, y el estado abierto/cerrado de la barra lateral ahora persiste entre recargas"
+      }
+    }
+  ]
+}
