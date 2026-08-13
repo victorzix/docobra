@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.2.0](https://github.com/victorzix/docobra/compare/v1.1.0...v1.2.0) (2026-08-13)
+
+### Features
+
+* add criarMemorialSchema with texto/audio discriminated union ([0be1240](https://github.com/victorzix/docobra/commit/0be1240a4469627df215419f2acaaceb2ab0edb8))
+* add gerarMemorial pipeline (LLM extraction + prose + PDF) ([cc7436d](https://github.com/victorzix/docobra/commit/cc7436ddbe8784e83da9e6cdb8a7947ee5c7f688))
+* add GET /api/memoriais/[id]/pdf download route ([5875c04](https://github.com/victorzix/docobra/commit/5875c04bc2c6f41496060c31afa5447f4e7d995b))
+* add local file storage and ABNT html template for memorial ([6912d01](https://github.com/victorzix/docobra/commit/6912d01dd1a333f003761ffb31d4c0440178eb95))
+* add Memorial Descritivo generator ([d6514e9](https://github.com/victorzix/docobra/commit/d6514e9517ac5cbfcf4fb342b425f9de7d55de92))
+* add memorial list, creation form, and audio recorder ([7bd9f9d](https://github.com/victorzix/docobra/commit/7bd9f9da602188008ec772f3f9fe1a347eacc63b))
+* add memorial query layer and buscarProjetoDaEmpresa ([43b38bd](https://github.com/victorzix/docobra/commit/43b38bd0d9fc3bf434fdc1e4bb7782ac201a7ef0))
+* add POST /api/memoriais route handler ([913e620](https://github.com/victorzix/docobra/commit/913e620cf711c90e81a98da1a59e8bc7419163e8))
+* add Puppeteer-based PDF generation ([6eaebe0](https://github.com/victorzix/docobra/commit/6eaebe0a44ab37aa39b7281208b934e2c4cc8a34))
+
+### Bug Fixes
+
+* exclude audioBase64 from prosa userPrompt in gerarMemorial ([0543dd1](https://github.com/victorzix/docobra/commit/0543dd168e13bed5c8553b5a29aa3eec53fd6e97))
+* exclude audioBase64 from respostasFormularioJson in gerarMemorial ([b59e1f2](https://github.com/victorzix/docobra/commit/b59e1f2fa9bb8c21b526ea4fb47c95e0f040bed5))
+* render missing fields (pavimentos, áreas) in memorial HTML template ([7b83eb1](https://github.com/victorzix/docobra/commit/7b83eb16b0c3d6ca088d7cee4df36e1a993bd989))
+* return 400/404 instead of 500 for malformed input in memoriais routes ([f6d42f6](https://github.com/victorzix/docobra/commit/f6d42f60b4acfe213fb23518a8c3a96ae6a1ad0b))
+* show validation error when required memorial fields are missing ([07fd3d1](https://github.com/victorzix/docobra/commit/07fd3d11edb025dabe9b66c92a1ab810207b2b75))
+* use a valid waitUntil value in page.setContent ([ae87bd6](https://github.com/victorzix/docobra/commit/ae87bd69da28db25ba8960aafa1eb6223f606411))
+* use a valid waitUntil value in page.setContent ([ec4338a](https://github.com/victorzix/docobra/commit/ec4338a68cb2f1c3b1792737816cda1ef197e363))
+* wrap PDF buffer in Uint8Array for NextResponse body type ([fc5234d](https://github.com/victorzix/docobra/commit/fc5234d7b4efe1c30807bfbc463303f3c843cab3))
+
+### Documentation
+
+* add 1.1.0 portfolio release notes ([2723688](https://github.com/victorzix/docobra/commit/2723688f72d39bcb84c9d93723dd48fc86460638))
+* add Memorial Descritivo design spec ([fb8ef2f](https://github.com/victorzix/docobra/commit/fb8ef2fc742ff3cde5b7ae329cb02d2a85b60220))
+* add Memorial Descritivo implementation plan ([6877f95](https://github.com/victorzix/docobra/commit/6877f951fa5caa62331438f1d73856d226ccc122))
 ## [1.1.0](https://github.com/victorzix/docobra/compare/v1.0.0...v1.1.0) (2026-08-13)
 
 ### Features
