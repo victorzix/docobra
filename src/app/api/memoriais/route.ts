@@ -15,22 +15,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
-  const body = await request.json();
-  const parsed = criarMemorialSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Dados inválidos.", fields: parsed.error.flatten().fieldErrors },
-      { status: 400 },
-    );
-  }
-
-  const projetoEncontrado = await buscarProjetoDaEmpresa(parsed.data.projetoId, sessao.empresaId);
-  if (!projetoEncontrado) {
-    return NextResponse.json({ error: "Projeto não encontrado." }, { status: 404 });
-  }
-
   try {
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+    }
+    const parsed = criarMemorialSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos.", fields: parsed.error.flatten().fieldErrors },
+        { status: 400 },
+      );
+    }
+
+    const projetoEncontrado = await buscarProjetoDaEmpresa(parsed.data.projetoId, sessao.empresaId);
+    if (!projetoEncontrado) {
+      return NextResponse.json({ error: "Projeto não encontrado." }, { status: 404 });
+    }
+
     const nomes = await buscarNomesUsuarioEEmpresa(sessao.userId);
     const resultado = await gerarMemorial(parsed.data, {
       projetoNome: projetoEncontrado.nome,

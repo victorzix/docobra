@@ -8,7 +8,7 @@ const especificacoesSchema = z.object({
 });
 
 const camposBase = {
-  projetoId: z.string().min(1, "Selecione um projeto."),
+  projetoId: z.string().uuid("Selecione um projeto."),
   tipoConstrucao: z.string().min(1, "Informe o tipo de construção."),
   numeroPavimentos: z.number().int().positive().optional(),
   areaConstruida: z.number().positive().optional(),

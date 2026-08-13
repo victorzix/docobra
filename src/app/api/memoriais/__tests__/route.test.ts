@@ -61,6 +61,33 @@ describe("POST /api/memoriais", () => {
     expect(response.status).toBe(400);
   });
 
+  it("rejeita projetoId que não é um uuid válido com 400", async () => {
+    const { token } = await criarSessaoComProjeto();
+
+    const response = await POST(
+      criarRequest({ projetoId: "abc", tipoConstrucao: "residencial", modoEspecificacoes: "texto" }, token),
+    );
+
+    expect(response.status).toBe(400);
+  });
+
+  it("rejeita corpo com JSON malformado com 400", async () => {
+    const { token } = await criarSessaoComProjeto();
+
+    const request = new NextRequest("http://localhost/api/memoriais", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: `${SESSION_COOKIE_NAME}=${token}`,
+      },
+      body: "{isso não é json",
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+  });
+
   it("rejeita projeto de outra empresa (ou inexistente) com 404", async () => {
     const { token } = await criarSessaoComProjeto();
 

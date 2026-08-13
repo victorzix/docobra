@@ -104,4 +104,17 @@ describe("GET /api/memoriais/[id]/pdf", () => {
 
     expect(response.status).toBe(401);
   });
+
+  it("retorna 404 pra id que não é um uuid válido", async () => {
+    const [novaEmpresa] = await db.insert(empresa).values({ nome: "Ancar Engenharia" }).returning();
+    const [novoUsuario] = await db
+      .insert(usuario)
+      .values({ nome: "Victor", email: "victor@ancar.com.br", senhaHash: "hash-fake", empresaId: novaEmpresa.id })
+      .returning();
+    const token = await assinarToken({ userId: novoUsuario.id, empresaId: novaEmpresa.id, papel: novoUsuario.papel });
+
+    const response = await GET(criarRequest(token), { params: Promise.resolve({ id: "nao-um-uuid" }) });
+
+    expect(response.status).toBe(404);
+  });
 });

@@ -14,12 +14,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const { id } = await params;
-  const memorial = await buscarMemorialDaEmpresa(id, sessao.empresaId);
 
-  if (!memorial || memorial.status !== "gerado") {
+  try {
+    const memorial = await buscarMemorialDaEmpresa(id, sessao.empresaId);
+
+    if (!memorial || memorial.status !== "gerado") {
+      return NextResponse.json({ error: "Memorial não encontrado." }, { status: 404 });
+    }
+
+    const pdf = await lerArquivo(`${id}.pdf`);
+    return new NextResponse(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf" } });
+  } catch (error) {
+    console.error("[GET /api/memoriais/[id]/pdf]", error);
     return NextResponse.json({ error: "Memorial não encontrado." }, { status: 404 });
   }
-
-  const pdf = await lerArquivo(`${id}.pdf`);
-  return new NextResponse(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf" } });
 }
