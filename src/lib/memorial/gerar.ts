@@ -77,7 +77,7 @@ export async function gerarMemorial(
   }>({
     systemPrompt:
       "Você é um engenheiro redigindo um memorial descritivo técnico em português formal, seguindo a norma ABNT.",
-    userPrompt: JSON.stringify({ ...input, especificacoes }),
+    userPrompt: JSON.stringify(respostasSemAudio(input, especificacoes)),
     schema: SCHEMA_PROSA,
   });
 

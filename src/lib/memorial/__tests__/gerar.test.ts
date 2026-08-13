@@ -111,6 +111,9 @@ describe("gerarMemorial", () => {
     });
     expect(linha.respostasFormularioJson).not.toHaveProperty("audioBase64");
     expect(JSON.stringify(linha.respostasFormularioJson)).not.toContain(audioBase64);
+
+    const prosaCall = vi.mocked(memorialRouter.extractStructured).mock.calls[1][0];
+    expect(prosaCall.userPrompt).not.toContain(audioBase64);
   });
 
   it("propaga o erro e deixa o registro em rascunho quando o LLM falha", async () => {
