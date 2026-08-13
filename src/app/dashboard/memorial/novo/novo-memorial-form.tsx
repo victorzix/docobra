@@ -37,6 +37,10 @@ export function NovoMemorialForm({ projetos }: NovoMemorialFormProps) {
   const criar = useCriarMemorial();
   const { register, handleSubmit } = useForm<FormValues>();
 
+  function onInvalid() {
+    setErro("Preencha os campos obrigatórios corretamente.");
+  }
+
   function onSubmit(values: FormValues) {
     setErro(null);
 
@@ -80,7 +84,7 @@ export function NovoMemorialForm({ projetos }: NovoMemorialFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
+    <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="grid gap-6">
       <div className="grid gap-2">
         <Label htmlFor="projetoId">Projeto</Label>
         <select id="projetoId" {...register("projetoId", { required: true })} className="rounded-md border p-2">
