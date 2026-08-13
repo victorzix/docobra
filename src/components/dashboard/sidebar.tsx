@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, ClipboardList } from "lucide-react";
+import { FileText, ClipboardList, FolderKanban } from "lucide-react";
 
 import {
   Sidebar,
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const ITENS_NAV = [
+  { href: "/dashboard/projetos", label: "Projetos", icon: FolderKanban },
   { href: "/dashboard/memorial", label: "Memorial Descritivo", icon: FileText },
   { href: "/dashboard/comunique-se", label: "Comunique-se", icon: ClipboardList },
 ];
