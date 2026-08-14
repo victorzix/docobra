@@ -52,3 +52,7 @@ next-env.d.ts
 
 # arquivos gerados (PDFs, áudios) do módulo de memorial descritivo
 /storage/
+
+# assets locais de preview (screenshot/gravação) antes de subir pro S3 e
+# entrar no content/releases/*.json — nunca comitados, ficam só na máquina
+/preview/

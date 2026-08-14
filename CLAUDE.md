@@ -54,6 +54,12 @@ nativo iOS/Android (pode vir depois da validação web).
   em si não tem nenhuma necessidade de 3D (não há planta/CAD/visualização
   nos módulos), então misturar as duas libs no app só adicionaria bundle e
   complexidade sem ganho.
+  - **Exceção aberta deliberadamente**: as telas `/login` e `/register`
+    (`src/app/(auth)/`) usam Anime.js para a cena 3D do painel de marca
+    (`floor-scene.tsx` — chão isométrico se montando + volume girando em
+    loop). Decisão explícita do usuário, reabrindo essa regra especificamente
+    para essas duas telas — não é precedente para usar Anime.js em outras
+    partes do app/dashboard sem perguntar de novo.
 
 ## Camada de LLM — regra mais importante do projeto
 
