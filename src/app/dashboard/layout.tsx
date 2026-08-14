@@ -1,9 +1,17 @@
 import { cookies } from "next/headers";
+import type { Metadata } from "next";
 import { getSessionUser } from "@/lib/auth/session";
 import { buscarNomesUsuarioEEmpresa } from "@/db/queries/usuario";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+
+export const metadata: Metadata = {
+  title: {
+    default: "Dashboard",
+    template: "%s — DocObra",
+  },
+};
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const sessao = await getSessionUser();

@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import { getSessionUser } from "@/lib/auth/session";
 import { listarProjetos } from "@/db/queries/projeto";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { NovoProjetoDialog } from "./novo-projeto-dialog";
+
+export const metadata: Metadata = {
+  title: "Projetos",
+};
 
 export default async function ProjetosPage() {
   const sessao = await getSessionUser();
