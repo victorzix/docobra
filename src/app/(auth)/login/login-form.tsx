@@ -49,9 +49,17 @@ export function LoginForm() {
       transition={{ duration: 0.35 }}
     >
       <div className="mb-8">
-        <span className="font-mono text-xs font-medium tracking-widest text-cyan-700 uppercase">
-          Acesso
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs font-medium tracking-widest text-cyan-700 uppercase">
+            Acesso
+          </span>
+          <motion.span
+            className="h-px flex-1 max-w-8 origin-left bg-cyan-600/40"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+          />
+        </div>
         <h2 className="mt-1 text-2xl font-semibold tracking-tight">Entrar</h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
           Acesse sua conta para continuar seus projetos.
