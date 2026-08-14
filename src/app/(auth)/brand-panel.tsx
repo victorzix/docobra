@@ -31,8 +31,20 @@ export function Logo({
 
 const NOTES = [
   { text: "ÁREA 18,40 m²", className: "left-3 top-3 -rotate-2", delay: BUILD_END + 0.3 },
-  { text: "PILAR 20x20", className: "right-3 top-3 rotate-1", delay: BUILD_END + 1.0 },
-  { text: "CONCRETO fck 25MPa", className: "bottom-3 right-3 rotate-1", delay: BUILD_END + 1.7 },
+  { text: "PILAR 20x20", className: "right-3 top-3 rotate-1", delay: BUILD_END + 0.9 },
+  { text: "REV. 02", className: "left-1/2 top-3 -translate-x-1/2 -rotate-1", delay: BUILD_END + 1.5 },
+  {
+    text: "6,00 × 4,20 = 25,20 m²",
+    className: "left-[4%] top-1/2 -translate-y-1/2 -rotate-1",
+    delay: BUILD_END + 2.1,
+  },
+  {
+    text: "ESQUADRIA 100x120",
+    className: "right-[4%] top-[64%] rotate-2",
+    delay: BUILD_END + 2.7,
+  },
+  { text: "N.A. +2,80", className: "left-3 bottom-3 rotate-2", delay: BUILD_END + 3.3 },
+  { text: "CONCRETO fck 25MPa", className: "bottom-3 right-3 rotate-1", delay: BUILD_END + 3.9 },
 ];
 
 const FEATURES = [
