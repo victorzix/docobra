@@ -73,7 +73,9 @@ export function LoginForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel className="font-mono text-[11px] font-medium tracking-wider text-slate-500 uppercase">
+                  Email
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -96,7 +98,9 @@ export function LoginForm() {
             name="senha"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Senha</FormLabel>
+                <FormLabel className="font-mono text-[11px] font-medium tracking-wider text-slate-500 uppercase">
+                  Senha
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -133,7 +137,7 @@ export function LoginForm() {
             type="submit"
             size="lg"
             disabled={logar.isPending}
-            className="mt-1 w-full bg-[#0a2c4d] text-white hover:bg-[#0d3a63]"
+            className="mt-1 w-full bg-[#0a2c4d] text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0d3a63] hover:shadow-lg hover:shadow-cyan-900/20 active:translate-y-0"
           >
             {logar.isPending ? "Entrando..." : "Entrar"}
           </Button>

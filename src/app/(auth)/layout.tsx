@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Ruler } from "lucide-react";
 
 import { BrandPanel, CornerMarks, Logo } from "./brand-panel";
 
@@ -24,6 +25,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           }}
         />
         <CornerMarks variant="light" />
+        <Ruler
+          className="pointer-events-none absolute -bottom-10 -right-10 size-56 rotate-[20deg] text-cyan-700/[0.05]"
+          strokeWidth={1}
+        />
         <div className="relative z-10 w-full max-w-sm">
           <Logo className="mb-10 lg:hidden" variant="light" />
           {children}
