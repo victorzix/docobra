@@ -3,7 +3,8 @@
 import { motion } from "framer-motion";
 import { FileCheck2, ListChecks, Ruler } from "lucide-react";
 
-import { FloorScene3D as FloorScene } from "./floor-scene-3d";
+import { BUILD_END, FloorScene3D as FloorScene } from "./floor-scene-3d";
+import { Typewriter } from "./typewriter";
 
 export function Logo({
   className,
@@ -27,6 +28,12 @@ export function Logo({
     </div>
   );
 }
+
+const NOTES = [
+  { text: "ÁREA 18,40 m²", className: "left-3 top-3 -rotate-2", delay: BUILD_END + 0.3 },
+  { text: "PILAR 20x20", className: "right-3 top-3 rotate-1", delay: BUILD_END + 1.0 },
+  { text: "CONCRETO fck 25MPa", className: "bottom-3 right-3 rotate-1", delay: BUILD_END + 1.7 },
+];
 
 const FEATURES = [
   { icon: FileCheck2, text: "Memorial Descritivo gerado em minutos, formatado em ABNT" },
@@ -61,6 +68,15 @@ export function BrandPanel() {
       <Logo className="relative z-10" />
 
       <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center overflow-hidden">
+        {NOTES.map((note) => (
+          <Typewriter
+            key={note.text}
+            text={note.text}
+            delay={note.delay}
+            duration={0.8}
+            className={`pointer-events-none absolute font-mono text-[9px] tracking-wide text-cyan-300/35 ${note.className}`}
+          />
+        ))}
         <FloorScene />
       </div>
 

@@ -3,7 +3,10 @@
 import { useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Edges, OrbitControls } from "@react-three/drei";
+import { motion } from "framer-motion";
 import type { Group } from "three";
+
+import { Typewriter } from "./typewriter";
 
 const CX = 120;
 const CZ = 90;
@@ -54,6 +57,8 @@ const CYLINDERS: Cyl[] = [
 const ELLIPSES: Ellip[] = [{ key: "vaso-bacia", cx: 205.5, cy: 119, rx: 9, ry: 12, height: 14 }];
 
 const WALLS_END = WALLS.length * WALL_STAGGER + WALL_DURATION;
+const FURNITURE_COUNT = BOXES.length + CYLINDERS.length + ELLIPSES.length;
+export const BUILD_END = WALLS_END + FURNITURE_COUNT * FURNITURE_STAGGER + FURNITURE_DURATION;
 
 function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3);
@@ -185,7 +190,7 @@ export function FloorScene3D() {
             enablePan={false}
             autoRotate
             autoRotateSpeed={1.4}
-            rotateSpeed={0.35}
+            rotateSpeed={0.20}
             maxPolarAngle={Math.PI / 2.15}
             minPolarAngle={Math.PI / 4}
           />
@@ -193,17 +198,38 @@ export function FloorScene3D() {
       </div>
 
       <div className="flex shrink-0 flex-col items-center gap-1">
-        <div className="relative h-2 w-40">
-          <span className="absolute inset-x-0 top-1/2 h-px bg-cyan-400/50" />
-          <span className="absolute left-0 top-0 h-2 w-px bg-cyan-400/50" />
-          <span className="absolute right-0 top-0 h-2 w-px bg-cyan-400/50" />
+        <div className="relative h-2 w-40 origin-center">
+          <motion.span
+            className="absolute inset-x-0 top-1/2 h-px origin-center bg-cyan-400/50"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ delay: BUILD_END, duration: 0.4, ease: "easeOut" }}
+          />
+          <motion.span
+            className="absolute left-0 top-0 h-2 w-px bg-cyan-400/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: BUILD_END + 0.4, duration: 0.2 }}
+          />
+          <motion.span
+            className="absolute right-0 top-0 h-2 w-px bg-cyan-400/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: BUILD_END + 0.4, duration: 0.2 }}
+          />
         </div>
-        <span className="font-mono text-[11px] tracking-wide text-cyan-400/70">
-          PLANTA BAIXA — ESC. 1:100
-        </span>
-        <span className="font-mono text-[10px] tracking-wide text-slate-500">
-          arraste para girar
-        </span>
+        <Typewriter
+          text="PLANTA BAIXA — ESC. 1:100"
+          delay={BUILD_END + 0.5}
+          duration={1.1}
+          className="font-mono text-[11px] tracking-wide text-cyan-400/70"
+        />
+        <Typewriter
+          text="arraste para girar"
+          delay={BUILD_END + 1.8}
+          duration={0.6}
+          className="font-mono text-[10px] tracking-wide text-slate-500"
+        />
       </div>
     </div>
   );
