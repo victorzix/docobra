@@ -29,22 +29,29 @@ export function Logo({
   );
 }
 
+// Clustered like real margin notes — jotted near a corner while figuring
+// something out, not evenly gridded around the sheet.
 const NOTES = [
-  { text: "ÁREA 18,40 m²", className: "left-3 top-3 -rotate-2", delay: BUILD_END + 0.3 },
-  { text: "PILAR 20x20", className: "right-3 top-3 rotate-1", delay: BUILD_END + 0.9 },
-  { text: "REV. 02", className: "left-1/2 top-3 -translate-x-1/2 -rotate-1", delay: BUILD_END + 1.5 },
+  {
+    text: "ÁREA 18,40 m²",
+    className: "left-4 top-4 -rotate-3 text-[9px] text-cyan-300/35",
+    delay: BUILD_END + 0.4,
+  },
   {
     text: "6,00 × 4,20 = 25,20 m²",
-    className: "left-[4%] top-1/2 -translate-y-1/2 -rotate-1",
-    delay: BUILD_END + 2.1,
+    className: "left-9 top-11 rotate-1 text-[8px] text-cyan-300/25",
+    delay: BUILD_END + 1.3,
   },
   {
-    text: "ESQUADRIA 100x120",
-    className: "right-[4%] top-[64%] rotate-2",
+    text: "CONCRETO fck 25MPa",
+    className: "bottom-4 right-4 -rotate-2 text-[9px] text-cyan-300/35",
     delay: BUILD_END + 2.7,
   },
-  { text: "N.A. +2,80", className: "left-3 bottom-3 rotate-2", delay: BUILD_END + 3.3 },
-  { text: "CONCRETO fck 25MPa", className: "bottom-3 right-3 rotate-1", delay: BUILD_END + 3.9 },
+  {
+    text: "N.A. +2,80",
+    className: "bottom-11 right-11 rotate-3 text-[8px] text-cyan-300/25",
+    delay: BUILD_END + 3.3,
+  },
 ];
 
 const FEATURES = [
@@ -86,7 +93,7 @@ export function BrandPanel() {
             text={note.text}
             delay={note.delay}
             duration={0.8}
-            className={`pointer-events-none absolute font-mono text-[9px] tracking-wide text-cyan-300/35 ${note.className}`}
+            className={`pointer-events-none absolute font-mono tracking-wide ${note.className}`}
           />
         ))}
         <FloorScene />
