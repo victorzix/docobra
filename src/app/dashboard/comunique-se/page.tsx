@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
+export const metadata: Metadata = {
+  title: "Comunique-se",
+};
 
 export default function ComuniqueSePage() {
   return (

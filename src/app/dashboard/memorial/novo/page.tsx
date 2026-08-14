@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { getSessionUser } from "@/lib/auth/session";
 import { listarProjetos } from "@/db/queries/projeto";
 import { NovoMemorialForm } from "./novo-memorial-form";
+
+export const metadata: Metadata = {
+  title: "Novo Memorial",
+};
 
 export default async function NovoMemorialPage() {
   const sessao = await getSessionUser();
