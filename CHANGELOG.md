@@ -25,6 +25,7 @@ All notable changes to this project will be documented in this file. See [commit
 
 * add 1.2.0 portfolio release notes ([e451b9e](https://github.com/victorzix/docobra/commit/e451b9eda9188cc287cb53b99c90e3ed28e694a4))
 * add 1.3.0 portfolio release notes ([9a7bef3](https://github.com/victorzix/docobra/commit/9a7bef359a03d3c151a2947983a9251946bdf6fb))
+
 ## [1.2.0](https://github.com/victorzix/docobra/compare/v1.1.0...v1.2.0) (2026-08-13)
 
 ### Features
