@@ -1,13 +1,19 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { Edges, OrbitControls } from "@react-three/drei";
+import type { Group } from "three";
 
 const CX = 120;
 const CZ = 90;
 const CYAN = "#67e8f9";
 const WALL_HEIGHT = 24;
 const WALL_THICKNESS = 3;
+const WALL_STAGGER = 0.09;
+const WALL_DURATION = 0.5;
+const FURNITURE_STAGGER = 0.06;
+const FURNITURE_DURATION = 0.35;
 
 const WALLS = [
   { x1: 10, y1: 10, x2: 230, y2: 10 },
@@ -47,7 +53,42 @@ const CYLINDERS: Cyl[] = [
 
 const ELLIPSES: Ellip[] = [{ key: "vaso-bacia", cx: 205.5, cy: 119, rx: 9, ry: 12, height: 14 }];
 
-function WallMesh({ x1, y1, x2, y2 }: (typeof WALLS)[number]) {
+const WALLS_END = WALLS.length * WALL_STAGGER + WALL_DURATION;
+
+function easeOutCubic(t: number) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+/** Anchors its children to the ground and grows them upward on mount — the "poured foundation" effect. */
+function Grow({
+  x,
+  z,
+  delay,
+  duration,
+  children,
+}: {
+  x: number;
+  z: number;
+  delay: number;
+  duration: number;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<Group>(null);
+
+  useFrame((state) => {
+    if (!ref.current) return;
+    const t = (state.clock.elapsedTime - delay) / duration;
+    ref.current.scale.y = easeOutCubic(Math.min(Math.max(t, 0), 1));
+  });
+
+  return (
+    <group ref={ref} position={[x, 0, z]} scale={[1, 0, 1]}>
+      {children}
+    </group>
+  );
+}
+
+function WallMesh({ x1, y1, x2, y2, delay }: (typeof WALLS)[number] & { delay: number }) {
   const dx = x2 - x1;
   const dz = y2 - y1;
   const length = Math.hypot(dx, dz);
@@ -56,45 +97,50 @@ function WallMesh({ x1, y1, x2, y2 }: (typeof WALLS)[number]) {
   const midZ = (y1 + y2) / 2 - CZ;
 
   return (
-    <mesh position={[midX, WALL_HEIGHT / 2, midZ]} rotation={[0, -angle, 0]}>
-      <boxGeometry args={[length, WALL_HEIGHT, WALL_THICKNESS]} />
-      <meshBasicMaterial color={CYAN} transparent opacity={0.05} />
-      <Edges color={CYAN} />
-    </mesh>
+    <Grow x={midX} z={midZ} delay={delay} duration={WALL_DURATION}>
+      <mesh position={[0, WALL_HEIGHT / 2, 0]} rotation={[0, -angle, 0]}>
+        <boxGeometry args={[length, WALL_HEIGHT, WALL_THICKNESS]} />
+        <meshBasicMaterial color={CYAN} transparent opacity={0.05} />
+        <Edges color={CYAN} />
+      </mesh>
+    </Grow>
   );
 }
 
-function BoxMesh({ x, y, width, depth, height, lift = 0 }: Box) {
+function BoxMesh({ x, y, width, depth, height, lift = 0, delay }: Box & { delay: number }) {
   return (
-    <mesh position={[x + width / 2 - CX, lift + height / 2, y + depth / 2 - CZ]}>
-      <boxGeometry args={[width, height, depth]} />
-      <meshBasicMaterial color={CYAN} transparent opacity={0.08} />
-      <Edges color={CYAN} />
-    </mesh>
+    <Grow x={x + width / 2 - CX} z={y + depth / 2 - CZ} delay={delay} duration={FURNITURE_DURATION}>
+      <mesh position={[0, lift + height / 2, 0]}>
+        <boxGeometry args={[width, height, depth]} />
+        <meshBasicMaterial color={CYAN} transparent opacity={0.08} />
+        <Edges color={CYAN} />
+      </mesh>
+    </Grow>
   );
 }
 
-function CylinderMesh({ cx, cy, r, height, lift = 0 }: Cyl) {
+function CylinderMesh({ cx, cy, r, height, lift = 0, delay }: Cyl & { delay: number }) {
   return (
-    <mesh position={[cx - CX, lift + height / 2, cy - CZ]}>
-      <cylinderGeometry args={[r, r, height, 20]} />
-      <meshBasicMaterial color={CYAN} transparent opacity={0.08} />
-      <Edges color={CYAN} />
-    </mesh>
+    <Grow x={cx - CX} z={cy - CZ} delay={delay} duration={FURNITURE_DURATION}>
+      <mesh position={[0, lift + height / 2, 0]}>
+        <cylinderGeometry args={[r, r, height, 20]} />
+        <meshBasicMaterial color={CYAN} transparent opacity={0.08} />
+        <Edges color={CYAN} />
+      </mesh>
+    </Grow>
   );
 }
 
-function EllipseMesh({ cx, cy, rx, ry, height, lift = 0 }: Ellip) {
+function EllipseMesh({ cx, cy, rx, ry, height, lift = 0, delay }: Ellip & { delay: number }) {
   const r = (rx + ry) / 2;
   return (
-    <mesh
-      position={[cx - CX, lift + height / 2, cy - CZ]}
-      scale={[rx / r, 1, ry / r]}
-    >
-      <cylinderGeometry args={[r, r, height, 24]} />
-      <meshBasicMaterial color={CYAN} transparent opacity={0.08} />
-      <Edges color={CYAN} />
-    </mesh>
+    <Grow x={cx - CX} z={cy - CZ} delay={delay} duration={FURNITURE_DURATION}>
+      <mesh position={[0, lift + height / 2, 0]} scale={[rx / r, 1, ry / r]}>
+        <cylinderGeometry args={[r, r, height, 24]} />
+        <meshBasicMaterial color={CYAN} transparent opacity={0.08} />
+        <Edges color={CYAN} />
+      </mesh>
+    </Grow>
   );
 }
 
@@ -102,16 +148,24 @@ function Plan() {
   return (
     <group>
       {WALLS.map((w, i) => (
-        <WallMesh key={`wall-${i}`} {...w} />
+        <WallMesh key={`wall-${i}`} {...w} delay={i * WALL_STAGGER} />
       ))}
-      {BOXES.map(({ key, ...b }) => (
-        <BoxMesh key={key} {...b} />
+      {BOXES.map(({ key, ...b }, i) => (
+        <BoxMesh key={key} {...b} delay={WALLS_END + i * FURNITURE_STAGGER} />
       ))}
-      {CYLINDERS.map(({ key, ...c }) => (
-        <CylinderMesh key={key} {...c} />
+      {CYLINDERS.map(({ key, ...c }, i) => (
+        <CylinderMesh
+          key={key}
+          {...c}
+          delay={WALLS_END + (BOXES.length + i) * FURNITURE_STAGGER}
+        />
       ))}
-      {ELLIPSES.map(({ key, ...e }) => (
-        <EllipseMesh key={key} {...e} />
+      {ELLIPSES.map(({ key, ...e }, i) => (
+        <EllipseMesh
+          key={key}
+          {...e}
+          delay={WALLS_END + (BOXES.length + CYLINDERS.length + i) * FURNITURE_STAGGER}
+        />
       ))}
     </group>
   );
