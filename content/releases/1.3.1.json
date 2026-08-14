@@ -1,0 +1,26 @@
+{
+  "releasedAt": "2026-08-14T17:30:00Z",
+  "title": {
+    "en": "Favicon and dynamic tab titles",
+    "pt": "Favicon e títulos de aba dinâmicos",
+    "es": "Favicon y títulos de pestaña dinámicos"
+  },
+  "changes": [
+    {
+      "type": "added",
+      "text": {
+        "en": "A proper favicon — the same ruler mark used in the brand logo — replacing the default Next.js icon",
+        "pt": "Um favicon de verdade — a mesma marca de régua usada no logo — no lugar do ícone padrão do Next.js",
+        "es": "Un favicon de verdad — la misma marca de regla usada en el logo — en lugar del ícono predeterminado de Next.js"
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "Dynamic browser tab titles per page (e.g. \"Entrar — DocObra\", \"Projetos — DocObra\") instead of the generic default title everywhere",
+        "pt": "Títulos de aba do navegador dinâmicos por página (ex.: \"Entrar — DocObra\", \"Projetos — DocObra\") em vez do título genérico padrão em todo lugar",
+        "es": "Títulos de pestaña del navegador dinámicos por página (ej.: \"Entrar — DocObra\", \"Projetos — DocObra\") en lugar del título genérico predeterminado en todas partes"
+      }
+    }
+  ]
+}

@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.3.1](https://github.com/victorzix/docobra/compare/v1.3.0...v1.3.1) (2026-08-14)
+
+### Features
+
+* add favicon and dynamic per-page tab titles ([b0b29e8](https://github.com/victorzix/docobra/commit/b0b29e8a593e9c7afad48fe79bb1f5531e0f4d6c))
+
+### Documentation
+
+* add 1.3.0 portfolio release notes ([eab6720](https://github.com/victorzix/docobra/commit/eab6720a39c24ffeec71c30e80a112f85ac838ee))
 ## [1.3.0](https://github.com/victorzix/docobra/compare/v1.2.0...v1.3.0) (2026-08-14)
 
 ### Features
