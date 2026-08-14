@@ -2,25 +2,6 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
-## [1.3.0](https://github.com/victorzix/docobra/compare/v1.2.0...v1.3.0) (2026-08-14)
-
-### Features
-
-* add pencil-drawn dimension arrows to the login 3D scene ([b771af6](https://github.com/victorzix/docobra/commit/b771af69993b9325f721b42273e72b3a987358d9))
-* animate the login 3D scene as if it were being built ([12f9acd](https://github.com/victorzix/docobra/commit/12f9acd5de844419b98b9bd07d3a73d9966ba376))
-* extrude the login 3D scene into real volumetric geometry ([b0c2870](https://github.com/victorzix/docobra/commit/b0c2870f503a2f092ca378030d23de86961b53f3))
-* redesign login/register with a real 3D floor-plan scene ([d10de3d](https://github.com/victorzix/docobra/commit/d10de3d61460da5c850a0e0c1f48ee7be0c67586))
-* scatter more handwritten technical notes across the login panel ([d9f487f](https://github.com/victorzix/docobra/commit/d9f487fea3ff4593abf0b8104a65249071ec951d))
-* type on the finishing touches after the login scene finishes building ([3b0f9c6](https://github.com/victorzix/docobra/commit/3b0f9c68930c7e6328d63dc3fee81f933df7c13d))
-
-### Bug Fixes
-
-* make the login panel's background notes read as organic, not gridded ([a846049](https://github.com/victorzix/docobra/commit/a84604933164e7f80ea057b158343a8bee4a380f))
-* tone down drag-to-rotate sensitivity in the login 3D scene ([e4b3625](https://github.com/victorzix/docobra/commit/e4b3625dd0415c3390a2e21c7f35a6f233bf17e2))
-
-### Documentation
-
-* add 1.2.0 portfolio release notes ([e451b9e](https://github.com/victorzix/docobra/commit/e451b9eda9188cc287cb53b99c90e3ed28e694a4))
 ## [1.2.0](https://github.com/victorzix/docobra/compare/v1.1.0...v1.2.0) (2026-08-13)
 
 ### Features
