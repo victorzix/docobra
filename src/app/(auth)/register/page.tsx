@@ -44,9 +44,17 @@ export default function RegisterPage() {
       transition={{ duration: 0.35 }}
     >
       <div className="mb-8">
-        <span className="font-mono text-xs font-medium tracking-widest text-cyan-700 uppercase">
-          Novo cadastro
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs font-medium tracking-widest text-cyan-700 uppercase">
+            Novo cadastro
+          </span>
+          <motion.span
+            className="h-px flex-1 max-w-8 origin-left bg-cyan-600/40"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+          />
+        </div>
         <h2 className="mt-1 text-2xl font-semibold tracking-tight">Criar conta</h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
           Comece a gerar seus documentos técnicos em poucos minutos.
@@ -60,7 +68,9 @@ export default function RegisterPage() {
             name="nomeEmpresa"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nome da empresa</FormLabel>
+                <FormLabel className="font-mono text-[11px] font-medium tracking-wider text-slate-500 uppercase">
+                  Nome da empresa
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Building2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -81,7 +91,9 @@ export default function RegisterPage() {
             name="nome"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Seu nome</FormLabel>
+                <FormLabel className="font-mono text-[11px] font-medium tracking-wider text-slate-500 uppercase">
+                  Seu nome
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -101,7 +113,9 @@ export default function RegisterPage() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel className="font-mono text-[11px] font-medium tracking-wider text-slate-500 uppercase">
+                  Email
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -123,7 +137,9 @@ export default function RegisterPage() {
             name="senha"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Senha</FormLabel>
+                <FormLabel className="font-mono text-[11px] font-medium tracking-wider text-slate-500 uppercase">
+                  Senha
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -160,7 +176,7 @@ export default function RegisterPage() {
             type="submit"
             size="lg"
             disabled={registrar.isPending}
-            className="mt-1 w-full bg-[#0a2c4d] text-white hover:bg-[#0d3a63]"
+            className="mt-1 w-full bg-[#0a2c4d] text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0d3a63] hover:shadow-lg hover:shadow-cyan-900/20 active:translate-y-0"
           >
             {registrar.isPending ? "Criando conta..." : "Criar conta"}
           </Button>

@@ -59,8 +59,8 @@ const FEATURES = [
   { icon: ListChecks, text: "Exigências da prefeitura traduzidas em checklist simples" },
 ];
 
-function CornerMarks() {
-  const base = "absolute size-4 border-cyan-400/30";
+export function CornerMarks({ variant = "dark" }: { variant?: "dark" | "light" }) {
+  const base = `absolute size-4 ${variant === "dark" ? "border-cyan-400/30" : "border-cyan-600/25"}`;
   return (
     <>
       <span className={`${base} left-6 top-6 border-l border-t`} />
