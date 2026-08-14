@@ -1,0 +1,42 @@
+{
+  "releasedAt": "2026-08-14T13:45:00Z",
+  "title": {
+    "en": "3D animated login",
+    "pt": "Login animado em 3D",
+    "es": "Login animado en 3D"
+  },
+  "changes": [
+    {
+      "type": "added",
+      "text": {
+        "en": "Redesigned login and registration screens: a blueprint-styled brand panel with a real 3D scene — a floor plan that builds itself wall by wall, complete with furniture, dimension arrows, and handwritten-looking notes — that slowly rotates and can be dragged to orbit",
+        "pt": "Telas de login e cadastro redesenhadas: um painel de marca em estilo planta técnica com uma cena 3D de verdade — uma planta baixa que se constrói sozinha parede por parede, com móveis, setas de cota e anotações que parecem escritas à mão — que gira devagar e pode ser arrastada para orbitar",
+        "es": "Pantallas de login y registro rediseñadas: un panel de marca con estilo de plano técnico y una escena 3D real — una planta baja que se construye sola pared por pared, con muebles, flechas de cota y anotaciones que parecen escritas a mano — que gira lentamente y se puede arrastrar para orbitar"
+      },
+      "image": {
+        "url": "https://res.cloudinary.com/avedkz6b/image/upload/v1786715349/login-screenshot.png",
+        "videoUrl": "https://res.cloudinary.com/avedkz6b/video/upload/v1786715348/login-animation.mp4",
+        "frame": "browser",
+        "browserUrl": "docobra.app",
+        "alt": {
+          "en": "Login screen with an animated 3D blueprint scene",
+          "pt": "Tela de login com cena 3D animada em estilo planta técnica",
+          "es": "Pantalla de login con escena 3D animada estilo plano técnico"
+        },
+        "caption": {
+          "en": "The floor plan builds itself, then rotates — drag to orbit",
+          "pt": "A planta se constrói sozinha e depois gira — arraste para orbitar",
+          "es": "El plano se construye solo y luego gira — arrastra para orbitar"
+        }
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "Icon-adorned inputs, a show/hide password toggle, inline error states, and cross-links between the login and registration screens",
+        "pt": "Campos com ícones, alternância de mostrar/ocultar senha, mensagens de erro mais claras, e links cruzados entre as telas de login e cadastro",
+        "es": "Campos con íconos, alternancia de mostrar/ocultar contraseña, mensajes de error más claros, y enlaces cruzados entre las pantallas de login y registro"
+      }
+    }
+  ]
+}
