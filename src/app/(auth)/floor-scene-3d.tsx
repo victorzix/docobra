@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Line, OrbitControls } from "@react-three/drei";
+import { Edges, OrbitControls } from "@react-three/drei";
 
 const CX = 120;
 const CZ = 90;
 const CYAN = "#67e8f9";
+const WALL_HEIGHT = 24;
+const WALL_THICKNESS = 3;
 
 const WALLS = [
   { x1: 10, y1: 10, x2: 230, y2: 10 },
@@ -19,79 +20,98 @@ const WALLS = [
   { x1: 205, y1: 90, x2: 230, y2: 90 },
 ];
 
-type Furniture =
-  | { type: "rect"; x: number; y: number; width: number; height: number }
-  | { type: "line"; x1: number; y1: number; x2: number; y2: number }
-  | { type: "circle"; cx: number; cy: number; r: number }
-  | { type: "ellipse"; cx: number; cy: number; rx: number; ry: number };
+type Box = { key: string; x: number; y: number; width: number; depth: number; height: number; lift?: number };
+type Cyl = { key: string; cx: number; cy: number; r: number; height: number; lift?: number };
+type Ellip = { key: string; cx: number; cy: number; rx: number; ry: number; height: number; lift?: number };
 
-const FURNITURE: Furniture[] = [
-  { type: "rect", x: 16, y: 18, width: 16, height: 46 },
-  { type: "line", x1: 16, y1: 33, x2: 32, y2: 33 },
-  { type: "line", x1: 16, y1: 49, x2: 32, y2: 49 },
-  { type: "rect", x: 40, y: 32, width: 18, height: 16 },
-  { type: "rect", x: 145, y: 16, width: 48, height: 32 },
-  { type: "rect", x: 150, y: 19, width: 38, height: 9 },
-  { type: "rect", x: 16, y: 148, width: 98, height: 13 },
-  { type: "circle", cx: 40, cy: 154.5, r: 4 },
-  { type: "circle", cx: 55, cy: 154.5, r: 4 },
-  { type: "rect", x: 90, y: 150, width: 16, height: 9 },
-  { type: "rect", x: 198, y: 98, width: 15, height: 9 },
-  { type: "ellipse", cx: 205.5, cy: 119, rx: 9, ry: 12 },
-  { type: "rect", x: 133, y: 98, width: 22, height: 11 },
-  { type: "circle", cx: 144, cy: 103.5, r: 3.5 },
+const BOXES: Box[] = [
+  // sofá (sala)
+  { key: "sofa", x: 16, y: 18, width: 16, depth: 46, height: 14 },
+  { key: "mesa-centro", x: 40, y: 32, width: 18, depth: 16, height: 10 },
+  // cama (quarto)
+  { key: "cama", x: 145, y: 16, width: 48, depth: 32, height: 12 },
+  { key: "travesseiro", x: 150, y: 19, width: 38, depth: 9, height: 4, lift: 12 },
+  // cozinha
+  { key: "bancada", x: 16, y: 148, width: 98, depth: 13, height: 10 },
+  { key: "pia-cozinha", x: 90, y: 150, width: 16, depth: 9, height: 12 },
+  // banheiro
+  { key: "vaso-tanque", x: 198, y: 98, width: 15, depth: 9, height: 18 },
+  { key: "pia-banho", x: 133, y: 98, width: 22, depth: 11, height: 8 },
 ];
 
-type Point = [number, number, number];
+const CYLINDERS: Cyl[] = [
+  { key: "fogao-1", cx: 40, cy: 154.5, r: 4, height: 11 },
+  { key: "fogao-2", cx: 55, cy: 154.5, r: 4, height: 11 },
+  { key: "cuba-banho", cx: 144, cy: 103.5, r: 3.5, height: 3, lift: 8 },
+];
 
-function rectPoints(x: number, y: number, width: number, height: number): Point[] {
-  const x0 = x - CX;
-  const z0 = y - CZ;
-  const x1 = x + width - CX;
-  const z1 = y + height - CZ;
-  return [
-    [x0, 0, z0],
-    [x1, 0, z0],
-    [x1, 0, z1],
-    [x0, 0, z1],
-    [x0, 0, z0],
-  ];
+const ELLIPSES: Ellip[] = [{ key: "vaso-bacia", cx: 205.5, cy: 119, rx: 9, ry: 12, height: 14 }];
+
+function WallMesh({ x1, y1, x2, y2 }: (typeof WALLS)[number]) {
+  const dx = x2 - x1;
+  const dz = y2 - y1;
+  const length = Math.hypot(dx, dz);
+  const angle = Math.atan2(dz, dx);
+  const midX = (x1 + x2) / 2 - CX;
+  const midZ = (y1 + y2) / 2 - CZ;
+
+  return (
+    <mesh position={[midX, WALL_HEIGHT / 2, midZ]} rotation={[0, -angle, 0]}>
+      <boxGeometry args={[length, WALL_HEIGHT, WALL_THICKNESS]} />
+      <meshBasicMaterial color={CYAN} transparent opacity={0.05} />
+      <Edges color={CYAN} />
+    </mesh>
+  );
 }
 
-function ellipsePoints(cx: number, cy: number, rx: number, ry: number, segments = 28): Point[] {
-  const pts: Point[] = [];
-  for (let i = 0; i <= segments; i++) {
-    const a = (i / segments) * Math.PI * 2;
-    pts.push([cx - CX + Math.cos(a) * rx, 0, cy - CZ + Math.sin(a) * ry]);
-  }
-  return pts;
+function BoxMesh({ x, y, width, depth, height, lift = 0 }: Box) {
+  return (
+    <mesh position={[x + width / 2 - CX, lift + height / 2, y + depth / 2 - CZ]}>
+      <boxGeometry args={[width, height, depth]} />
+      <meshBasicMaterial color={CYAN} transparent opacity={0.08} />
+      <Edges color={CYAN} />
+    </mesh>
+  );
 }
 
-function furniturePoints(f: Furniture): Point[] {
-  if (f.type === "rect") return rectPoints(f.x, f.y, f.width, f.height);
-  if (f.type === "line")
-    return [
-      [f.x1 - CX, 0, f.y1 - CZ],
-      [f.x2 - CX, 0, f.y2 - CZ],
-    ];
-  if (f.type === "circle") return ellipsePoints(f.cx, f.cy, f.r, f.r);
-  return ellipsePoints(f.cx, f.cy, f.rx, f.ry);
+function CylinderMesh({ cx, cy, r, height, lift = 0 }: Cyl) {
+  return (
+    <mesh position={[cx - CX, lift + height / 2, cy - CZ]}>
+      <cylinderGeometry args={[r, r, height, 20]} />
+      <meshBasicMaterial color={CYAN} transparent opacity={0.08} />
+      <Edges color={CYAN} />
+    </mesh>
+  );
+}
+
+function EllipseMesh({ cx, cy, rx, ry, height, lift = 0 }: Ellip) {
+  const r = (rx + ry) / 2;
+  return (
+    <mesh
+      position={[cx - CX, lift + height / 2, cy - CZ]}
+      scale={[rx / r, 1, ry / r]}
+    >
+      <cylinderGeometry args={[r, r, height, 24]} />
+      <meshBasicMaterial color={CYAN} transparent opacity={0.08} />
+      <Edges color={CYAN} />
+    </mesh>
+  );
 }
 
 function Plan() {
-  const wallLines = useMemo(
-    () => WALLS.map((w) => [[w.x1 - CX, 0, w.y1 - CZ], [w.x2 - CX, 0, w.y2 - CZ]] as Point[]),
-    [],
-  );
-  const furnitureLines = useMemo(() => FURNITURE.map(furniturePoints), []);
-
   return (
     <group>
-      {wallLines.map((pts, i) => (
-        <Line key={`wall-${i}`} points={pts} color={CYAN} lineWidth={2} />
+      {WALLS.map((w, i) => (
+        <WallMesh key={`wall-${i}`} {...w} />
       ))}
-      {furnitureLines.map((pts, i) => (
-        <Line key={`furniture-${i}`} points={pts} color={CYAN} lineWidth={1} transparent opacity={0.75} />
+      {BOXES.map(({ key, ...b }) => (
+        <BoxMesh key={key} {...b} />
+      ))}
+      {CYLINDERS.map(({ key, ...c }) => (
+        <CylinderMesh key={key} {...c} />
+      ))}
+      {ELLIPSES.map(({ key, ...e }) => (
+        <EllipseMesh key={key} {...e} />
       ))}
     </group>
   );
