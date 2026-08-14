@@ -1,33 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { FileCheck2, ListChecks, Ruler } from "lucide-react";
+import { FileCheck2, ListChecks } from "lucide-react";
 
+import { Logo } from "@/components/common/logo";
 import { BUILD_END, FloorScene3D as FloorScene } from "./floor-scene-3d";
 import { Typewriter } from "./typewriter";
-
-export function Logo({
-  className,
-  variant = "dark",
-}: {
-  className?: string;
-  variant?: "dark" | "light";
-}) {
-  return (
-    <div className={`flex items-center gap-2.5 ${className ?? ""}`}>
-      <div className="flex size-9 items-center justify-center rounded-lg bg-cyan-500">
-        <Ruler className="size-5 text-[#08243f]" strokeWidth={2.25} />
-      </div>
-      <span
-        className={`text-lg font-semibold tracking-tight ${
-          variant === "dark" ? "text-white" : "text-foreground"
-        }`}
-      >
-        DocObra
-      </span>
-    </div>
-  );
-}
 
 // Clustered like real margin notes — jotted near a corner while figuring
 // something out, not evenly gridded around the sheet.

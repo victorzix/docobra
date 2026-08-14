@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { Ruler } from "lucide-react";
 
-import { BrandPanel, CornerMarks, Logo } from "./brand-panel";
+import { Logo } from "@/components/common/logo";
+import { BrandPanel, CornerMarks } from "./brand-panel";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
