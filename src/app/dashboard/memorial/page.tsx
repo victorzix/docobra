@@ -1,14 +1,9 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 
 import { getSessionUser } from "@/lib/auth/session";
 import { listarMemoriais } from "@/db/queries/memorial";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-
-export const metadata: Metadata = {
-  title: "Memorial Descritivo",
-};
 
 export default async function MemorialListaPage() {
   const sessao = await getSessionUser();
