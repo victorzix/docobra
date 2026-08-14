@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Edges, OrbitControls } from "@react-three/drei";
+import { Edges, Line, OrbitControls } from "@react-three/drei";
 import { motion } from "framer-motion";
 import type { Group } from "three";
 
@@ -149,6 +149,128 @@ function EllipseMesh({ cx, cy, rx, ry, height, lift = 0, delay }: Ellip & { dela
   );
 }
 
+const DIM_MARGIN = 18;
+const BX0 = 10 - CX;
+const BX1 = 230 - CX;
+const BZ0 = 10 - CZ;
+const BZ1 = 170 - CZ;
+const DIM_COLOR = "#a5f3fc";
+
+/** Uniformly scales its children in the ground plane from their anchor point outward — a "ruler being pulled out" reveal. */
+function GrowFlat({
+  x,
+  z,
+  delay,
+  duration,
+  children,
+}: {
+  x: number;
+  z: number;
+  delay: number;
+  duration: number;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<Group>(null);
+
+  useFrame((state) => {
+    if (!ref.current) return;
+    const t = (state.clock.elapsedTime - delay) / duration;
+    const s = easeOutCubic(Math.min(Math.max(t, 0), 1));
+    ref.current.scale.set(s, 1, s);
+  });
+
+  return (
+    <group ref={ref} position={[x, 0, z]} scale={[0, 1, 0]}>
+      {children}
+    </group>
+  );
+}
+
+function ArrowHead({
+  x,
+  z,
+  rotation,
+}: {
+  x: number;
+  z: number;
+  rotation: [number, number, number];
+}) {
+  return (
+    <mesh position={[x, 0, z]} rotation={rotation}>
+      <coneGeometry args={[1.6, 5, 10]} />
+      <meshBasicMaterial color={DIM_COLOR} transparent opacity={0.55} />
+    </mesh>
+  );
+}
+
+/** A pencil-drawn-looking architectural dimension line: extension ticks + arrowed span. */
+function DimensionLine({
+  axis,
+  spanFrom,
+  spanTo,
+  lineCoord,
+  edgeCoord,
+  delay,
+}: {
+  axis: "x" | "z";
+  /** World coordinate range along the varying axis. */
+  spanFrom: number;
+  spanTo: number;
+  /** World coordinate of the dimension line itself, on the fixed (perpendicular) axis. */
+  lineCoord: number;
+  /** World coordinate of the building edge, on that same fixed axis — where the extension ticks land. */
+  edgeCoord: number;
+  delay: number;
+}) {
+  const mid = (spanFrom + spanTo) / 2;
+  const half = (spanTo - spanFrom) / 2;
+  const edgeDelta = edgeCoord - lineCoord;
+
+  const anchorX = axis === "x" ? mid : lineCoord;
+  const anchorZ = axis === "x" ? lineCoord : mid;
+
+  // Relative coordinates, in the child's own frame (origin at the dimension line's midpoint).
+  const p1: [number, number, number] = axis === "x" ? [-half, 0, 0] : [0, 0, -half];
+  const p2: [number, number, number] = axis === "x" ? [half, 0, 0] : [0, 0, half];
+  const edge1: [number, number, number] = axis === "x" ? [-half, 0, edgeDelta] : [edgeDelta, 0, -half];
+  const edge2: [number, number, number] = axis === "x" ? [half, 0, edgeDelta] : [edgeDelta, 0, half];
+  const arrowRot1: [number, number, number] = axis === "x" ? [0, 0, Math.PI / 2] : [-Math.PI / 2, 0, 0];
+  const arrowRot2: [number, number, number] = axis === "x" ? [0, 0, -Math.PI / 2] : [Math.PI / 2, 0, 0];
+
+  return (
+    <GrowFlat x={anchorX} z={anchorZ} delay={delay} duration={0.6}>
+      <Line points={[p1, p2]} color={DIM_COLOR} lineWidth={1} transparent opacity={0.55} />
+      <Line points={[p1, edge1]} color={DIM_COLOR} lineWidth={1} transparent opacity={0.35} />
+      <Line points={[p2, edge2]} color={DIM_COLOR} lineWidth={1} transparent opacity={0.35} />
+      <ArrowHead x={p1[0]} z={p1[2]} rotation={arrowRot1} />
+      <ArrowHead x={p2[0]} z={p2[2]} rotation={arrowRot2} />
+    </GrowFlat>
+  );
+}
+
+function Dimensions() {
+  return (
+    <>
+      <DimensionLine
+        axis="x"
+        spanFrom={BX0}
+        spanTo={BX1}
+        lineCoord={BZ1 + DIM_MARGIN}
+        edgeCoord={BZ1}
+        delay={BUILD_END}
+      />
+      <DimensionLine
+        axis="z"
+        spanFrom={BZ0}
+        spanTo={BZ1}
+        lineCoord={BX0 - DIM_MARGIN}
+        edgeCoord={BX0}
+        delay={BUILD_END + 0.25}
+      />
+    </>
+  );
+}
+
 function Plan() {
   return (
     <group>
@@ -172,6 +294,7 @@ function Plan() {
           delay={WALLS_END + (BOXES.length + CYLINDERS.length + i) * FURNITURE_STAGGER}
         />
       ))}
+      <Dimensions />
     </group>
   );
 }
