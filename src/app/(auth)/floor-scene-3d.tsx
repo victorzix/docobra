@@ -185,6 +185,7 @@ export function FloorScene3D() {
             enablePan={false}
             autoRotate
             autoRotateSpeed={1.4}
+            rotateSpeed={0.35}
             maxPolarAngle={Math.PI / 2.15}
             minPolarAngle={Math.PI / 4}
           />
