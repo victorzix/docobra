@@ -62,7 +62,7 @@ describe("gerarMemorial", () => {
         modoEspecificacoes: "texto",
         especificacoes: { fundacaoEstrutura: "Radier" },
       },
-      CONTEXTO,
+      { ...CONTEXTO, empresaId: novoProjeto.empresaId },
     );
 
     expect(resultado.status).toBe("gerado");
@@ -72,6 +72,10 @@ describe("gerarMemorial", () => {
 
     const [linha] = await db.select().from(memorialDescritivo);
     expect(linha.status).toBe("gerado");
+
+    const prosaCall = vi.mocked(memorialRouter.extractStructured).mock.calls[0][0];
+    expect(prosaCall.userPrompt).not.toContain(novoProjeto.id);
+    expect(prosaCall.userPrompt).toContain("Casa da Praia");
   });
 
   it("modo áudio: transcreve, extrai as especificações e depois gera a prosa", async () => {
@@ -97,7 +101,7 @@ describe("gerarMemorial", () => {
         audioBase64,
         audioMimeType: "audio/webm",
       },
-      CONTEXTO,
+      { ...CONTEXTO, empresaId: novoProjeto.empresaId },
     );
 
     expect(resultado.status).toBe("gerado");
@@ -114,6 +118,8 @@ describe("gerarMemorial", () => {
 
     const prosaCall = vi.mocked(memorialRouter.extractStructured).mock.calls[1][0];
     expect(prosaCall.userPrompt).not.toContain(audioBase64);
+    expect(prosaCall.userPrompt).not.toContain(novoProjeto.id);
+    expect(prosaCall.userPrompt).toContain("Casa da Praia");
   });
 
   it("propaga o erro e deixa o registro em rascunho quando o LLM falha", async () => {
@@ -123,7 +129,7 @@ describe("gerarMemorial", () => {
     await expect(
       gerarMemorial(
         { projetoId: novoProjeto.id, tipoConstrucao: "residencial", modoEspecificacoes: "texto" },
-        CONTEXTO,
+        { ...CONTEXTO, empresaId: novoProjeto.empresaId },
       ),
     ).rejects.toThrow("LLM indisponível");
 
