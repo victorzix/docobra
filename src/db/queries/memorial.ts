@@ -2,9 +2,11 @@ import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { memorialDescritivo, projeto } from "@/db/schema";
+import { proximoNumero } from "./contador";
 
 export interface Memorial {
   id: string;
+  numero: number;
   projetoId: string;
   status: string;
   documentoGeradoUrl: string | null;
@@ -18,6 +20,7 @@ export interface MemorialComProjeto extends Memorial {
 
 const CAMPOS_MEMORIAL = {
   id: memorialDescritivo.id,
+  numero: memorialDescritivo.numero,
   projetoId: memorialDescritivo.projetoId,
   status: memorialDescritivo.status,
   documentoGeradoUrl: memorialDescritivo.documentoGeradoUrl,
@@ -27,11 +30,13 @@ const CAMPOS_MEMORIAL = {
 
 export async function criarMemorialRascunho(input: {
   projetoId: string;
+  empresaId: string;
   respostasFormularioJson: unknown;
 }): Promise<Memorial> {
+  const numero = await proximoNumero(input.empresaId, "memorial_descritivo");
   const [criado] = await db
     .insert(memorialDescritivo)
-    .values({ projetoId: input.projetoId, respostasFormularioJson: input.respostasFormularioJson })
+    .values({ projetoId: input.projetoId, numero, respostasFormularioJson: input.respostasFormularioJson })
     .returning(CAMPOS_MEMORIAL);
   return criado;
 }

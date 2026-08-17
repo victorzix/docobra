@@ -109,6 +109,7 @@ describe("POST /api/memoriais", () => {
     const { token, projetoId } = await criarSessaoComProjeto();
     vi.mocked(gerarMemorial).mockResolvedValue({
       id: "abc",
+      numero: 1,
       status: "gerado",
       documentoGeradoUrl: "/api/memoriais/abc/pdf",
     });

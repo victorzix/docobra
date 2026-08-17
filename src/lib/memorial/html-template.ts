@@ -1,4 +1,5 @@
 export interface DadosMemorial {
+  referencia: string;
   projetoNome: string;
   projetoEndereco: string | null;
   empresaNome: string;
@@ -37,6 +38,7 @@ export function gerarHtmlMemorial(dados: DadosMemorial): string {
     <h1>Memorial Descritivo</h1>
     <h2>Identificação da obra</h2>
     <dl>
+      <dt>Nº do memorial</dt><dd>${escapeHtml(dados.referencia)}</dd>
       <dt>Projeto</dt><dd>${escapeHtml(dados.projetoNome)}</dd>
       ${linhaEndereco}
       <dt>Empresa</dt><dd>${escapeHtml(dados.empresaNome)}</dd>

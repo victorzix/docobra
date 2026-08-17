@@ -3,6 +3,7 @@
 import { CalendarDays, FolderKanban, MapPin } from "lucide-react";
 
 import { useProjetos, type PaginaProjetos } from "@/hooks/use-projetos";
+import { referenciaProjeto } from "@/lib/referencia";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 
@@ -19,8 +20,13 @@ export function ProjetosGrid({ paginaInicial }: { paginaInicial: PaginaProjetos 
             key={p.id}
             className="gap-3 border-border/60 p-5 transition-shadow duration-200 hover:border-primary/30 hover:shadow-md"
           >
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <FolderKanban className="size-5" />
+            <div className="flex items-center justify-between">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <FolderKanban className="size-5" />
+              </div>
+              <span className="font-mono text-xs text-muted-foreground">
+                {referenciaProjeto(p.numero)}
+              </span>
             </div>
             <div>
               <CardTitle className="text-base">{p.nome}</CardTitle>

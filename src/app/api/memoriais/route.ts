@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
 
     const nomes = await buscarNomesUsuarioEEmpresa(sessao.userId);
     const resultado = await gerarMemorial(parsed.data, {
+      empresaId: sessao.empresaId,
       projetoNome: projetoEncontrado.nome,
       projetoEndereco: projetoEncontrado.endereco,
       empresaNome: nomes?.empresaNome ?? "",

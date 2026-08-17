@@ -30,10 +30,11 @@ describe("criarMemorialRascunho", () => {
   afterEach(limparBanco);
 
   it("cria com status rascunho e as respostas informadas", async () => {
-    const { projeto: novoProjeto } = await criarProjetoDeTeste();
+    const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
 
     const resultado = await criarMemorialRascunho({
       projetoId: novoProjeto.id,
+      empresaId: novaEmpresa.id,
       respostasFormularioJson: { tipoConstrucao: "residencial" },
     });
 
@@ -48,9 +49,9 @@ describe("listarMemoriais", () => {
 
   it("lista só os memoriais da empresa pedida, com o nome do projeto", async () => {
     const { empresa: empresaA, projeto: projetoA } = await criarProjetoDeTeste("Empresa A");
-    const { projeto: projetoB } = await criarProjetoDeTeste("Empresa B");
-    await criarMemorialRascunho({ projetoId: projetoA.id, respostasFormularioJson: {} });
-    await criarMemorialRascunho({ projetoId: projetoB.id, respostasFormularioJson: {} });
+    const { empresa: empresaB, projeto: projetoB } = await criarProjetoDeTeste("Empresa B");
+    await criarMemorialRascunho({ projetoId: projetoA.id, empresaId: empresaA.id, respostasFormularioJson: {} });
+    await criarMemorialRascunho({ projetoId: projetoB.id, empresaId: empresaB.id, respostasFormularioJson: {} });
 
     const resultado = await listarMemoriais(empresaA.id);
 
@@ -73,7 +74,11 @@ describe("buscarMemorialDaEmpresa", () => {
 
   it("retorna o memorial quando pertence à empresa", async () => {
     const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
-    const criado = await criarMemorialRascunho({ projetoId: novoProjeto.id, respostasFormularioJson: {} });
+    const criado = await criarMemorialRascunho({
+      projetoId: novoProjeto.id,
+      empresaId: novaEmpresa.id,
+      respostasFormularioJson: {},
+    });
 
     const resultado = await buscarMemorialDaEmpresa(criado.id, novaEmpresa.id);
 
@@ -81,9 +86,13 @@ describe("buscarMemorialDaEmpresa", () => {
   });
 
   it("retorna null quando o memorial é de outra empresa", async () => {
-    const { projeto: projetoA } = await criarProjetoDeTeste("Empresa A");
+    const { empresa: empresaA, projeto: projetoA } = await criarProjetoDeTeste("Empresa A");
     const { empresa: empresaB } = await criarProjetoDeTeste("Empresa B");
-    const criado = await criarMemorialRascunho({ projetoId: projetoA.id, respostasFormularioJson: {} });
+    const criado = await criarMemorialRascunho({
+      projetoId: projetoA.id,
+      empresaId: empresaA.id,
+      respostasFormularioJson: {},
+    });
 
     const resultado = await buscarMemorialDaEmpresa(criado.id, empresaB.id);
 
@@ -97,7 +106,11 @@ describe("marcarComoGerado", () => {
 
   it("atualiza status, documentoGeradoUrl e respostasFormularioJson", async () => {
     const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
-    const criado = await criarMemorialRascunho({ projetoId: novoProjeto.id, respostasFormularioJson: {} });
+    const criado = await criarMemorialRascunho({
+      projetoId: novoProjeto.id,
+      empresaId: novaEmpresa.id,
+      respostasFormularioJson: {},
+    });
 
     await marcarComoGerado(criado.id, {
       documentoGeradoUrl: `/api/memoriais/${criado.id}/pdf`,
@@ -111,7 +124,11 @@ describe("marcarComoGerado", () => {
 
   it("atualiza audioUrl quando fornecido", async () => {
     const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
-    const criado = await criarMemorialRascunho({ projetoId: novoProjeto.id, respostasFormularioJson: {} });
+    const criado = await criarMemorialRascunho({
+      projetoId: novoProjeto.id,
+      empresaId: novaEmpresa.id,
+      respostasFormularioJson: {},
+    });
 
     await marcarComoGerado(criado.id, {
       documentoGeradoUrl: `/api/memoriais/${criado.id}/pdf`,
@@ -124,7 +141,11 @@ describe("marcarComoGerado", () => {
 
   it("preserva audioUrl ao omitir em chamada subsequente", async () => {
     const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
-    const criado = await criarMemorialRascunho({ projetoId: novoProjeto.id, respostasFormularioJson: {} });
+    const criado = await criarMemorialRascunho({
+      projetoId: novoProjeto.id,
+      empresaId: novaEmpresa.id,
+      respostasFormularioJson: {},
+    });
     const audioUrl = "https://storage.example.com/audio/memorial-123.mp3";
 
     // Primeira chamada com audioUrl
@@ -146,7 +167,11 @@ describe("marcarComoGerado", () => {
 
   it("preserva respostasFormularioJson ao omitir em chamada subsequente", async () => {
     const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
-    const criado = await criarMemorialRascunho({ projetoId: novoProjeto.id, respostasFormularioJson: {} });
+    const criado = await criarMemorialRascunho({
+      projetoId: novoProjeto.id,
+      empresaId: novaEmpresa.id,
+      respostasFormularioJson: {},
+    });
     const respostas = { tipoConstrucao: "residencial", metragem: 150 };
 
     // Primeira chamada com respostasFormularioJson

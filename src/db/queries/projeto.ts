@@ -2,9 +2,11 @@ import { and, count, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { projeto } from "@/db/schema";
+import { proximoNumero } from "./contador";
 
 export interface Projeto {
   id: string;
+  numero: number;
   nome: string;
   endereco: string | null;
   createdAt: Date;
@@ -17,6 +19,7 @@ export interface PaginaProjetos {
 
 const CAMPOS_PROJETO = {
   id: projeto.id,
+  numero: projeto.numero,
   nome: projeto.nome,
   endereco: projeto.endereco,
   createdAt: projeto.createdAt,
@@ -81,7 +84,8 @@ export async function criarProjeto(input: {
   endereco?: string;
   empresaId: string;
 }): Promise<Projeto> {
-  const [criado] = await db.insert(projeto).values(input).returning(CAMPOS_PROJETO);
+  const numero = await proximoNumero(input.empresaId, "projeto");
+  const [criado] = await db.insert(projeto).values({ ...input, numero }).returning(CAMPOS_PROJETO);
   return criado;
 }
 

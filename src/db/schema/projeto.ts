@@ -1,9 +1,10 @@
-import { pgTable, uuid, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, integer, timestamp } from "drizzle-orm/pg-core";
 
 import { empresa } from "./empresa";
 
 export const projeto = pgTable("projeto", {
   id: uuid("id").defaultRandom().primaryKey(),
+  numero: integer("numero").notNull().default(0),
   nome: varchar("nome", { length: 255 }).notNull(),
   empresaId: uuid("empresa_id")
     .notNull()
