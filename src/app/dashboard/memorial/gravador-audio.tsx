@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-
-import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { Mic, Square } from "lucide-react";
 
 interface GravadorAudioProps {
   onGravado: (audioBase64: string, mimeType: string) => void;
@@ -52,15 +52,26 @@ export function GravadorAudio({ onGravado }: GravadorAudioProps) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <Button
+    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border py-6">
+      <button
         type="button"
-        variant={gravando ? "destructive" : "default"}
         onClick={gravando ? pararGravacao : iniciarGravacao}
+        className="relative flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-colors data-[gravando=true]:bg-destructive data-[gravando=true]:text-white"
+        data-gravando={gravando}
       >
-        {gravando ? "Parar gravação" : "Gravar áudio"}
-      </Button>
-      {urlPreview && <audio controls src={urlPreview} />}
+        {gravando && (
+          <motion.span
+            className="absolute inset-0 rounded-full bg-destructive"
+            animate={{ scale: [1, 1.6], opacity: [0.5, 0] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
+          />
+        )}
+        {gravando ? <Square className="size-5 fill-current" /> : <Mic className="size-5" />}
+      </button>
+      <p className="text-sm text-muted-foreground">
+        {gravando ? "Gravando... toque para parar" : "Toque para gravar"}
+      </p>
+      {urlPreview && <audio controls src={urlPreview} className="mt-1 h-9" />}
     </div>
   );
 }

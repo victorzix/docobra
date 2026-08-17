@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
 
 import type { Projeto } from "@/db/queries/projeto";
 import { criarMemorialSchema } from "@/lib/validations/memorial/create.schema";
 import { useCriarMemorial } from "@/hooks/use-criar-memorial";
+import { ProjetoCombobox } from "@/components/common/projeto-combobox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,15 +27,15 @@ interface FormValues {
 
 interface NovoMemorialFormProps {
   projetos: Projeto[];
+  onSuccess: () => void;
 }
 
-export function NovoMemorialForm({ projetos }: NovoMemorialFormProps) {
-  const router = useRouter();
+export function NovoMemorialForm({ projetos, onSuccess }: NovoMemorialFormProps) {
   const [modo, setModo] = useState<"texto" | "audio">("texto");
   const [audio, setAudio] = useState<{ base64: string; mimeType: string } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const criar = useCriarMemorial();
-  const { register, handleSubmit } = useForm<FormValues>();
+  const { register, handleSubmit, control } = useForm<FormValues>();
 
   function onInvalid() {
     setErro("Preencha os campos obrigatórios corretamente.");
@@ -78,7 +78,7 @@ export function NovoMemorialForm({ projetos }: NovoMemorialFormProps) {
     }
 
     criar.mutate(parsed.data, {
-      onSuccess: () => router.push("/dashboard/memorial"),
+      onSuccess: () => onSuccess(),
       onError: (error) => setErro(error.message),
     });
   }
@@ -87,14 +87,14 @@ export function NovoMemorialForm({ projetos }: NovoMemorialFormProps) {
     <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="grid gap-6">
       <div className="grid gap-2">
         <Label htmlFor="projetoId">Projeto</Label>
-        <select id="projetoId" {...register("projetoId", { required: true })} className="rounded-md border p-2">
-          <option value="">Selecione...</option>
-          {projetos.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nome}
-            </option>
-          ))}
-        </select>
+        <Controller
+          control={control}
+          name="projetoId"
+          rules={{ required: true }}
+          render={({ field }) => (
+            <ProjetoCombobox projetos={projetos} value={field.value} onChange={field.onChange} />
+          )}
+        />
       </div>
 
       <div className="grid gap-2">
