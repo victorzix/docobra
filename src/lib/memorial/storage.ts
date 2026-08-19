@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const DIR_STORAGE = path.join(process.cwd(), "storage", "memoriais");
+const DIR_STORAGE = path.join(process.cwd(), process.env.MEMORIAL_STORAGE_DIR ?? "storage/memoriais");
 
 export async function salvarArquivo(nomeArquivo: string, conteudo: Buffer): Promise<string> {
   await mkdir(DIR_STORAGE, { recursive: true });
