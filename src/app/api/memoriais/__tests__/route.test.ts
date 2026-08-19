@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 import { db } from "@/db";
-import { empresa, projeto, usuario } from "@/db/schema";
+import { empresa, memorialDescritivo, projeto, usuario } from "@/db/schema";
 import { assinarToken } from "@/lib/auth/jwt";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 
@@ -11,12 +11,19 @@ vi.mock("@/lib/memorial/gerar", () => ({
 }));
 
 import { gerarMemorial } from "@/lib/memorial/gerar";
-import { POST } from "@/app/api/memoriais/route";
+import { GET, POST } from "@/app/api/memoriais/route";
 
 async function limparBanco() {
+  await db.delete(memorialDescritivo);
   await db.delete(projeto);
   await db.delete(usuario);
   await db.delete(empresa);
+}
+
+function criarRequestGet(token?: string) {
+  return new NextRequest("http://localhost/api/memoriais", {
+    headers: token ? { Cookie: `${SESSION_COOKIE_NAME}=${token}` } : {},
+  });
 }
 
 async function criarSessaoComProjeto() {
@@ -132,5 +139,44 @@ describe("POST /api/memoriais", () => {
     );
 
     expect(response.status).toBe(500);
+  });
+});
+
+describe("GET /api/memoriais", () => {
+  beforeEach(limparBanco);
+  afterEach(limparBanco);
+
+  it("lista os memoriais da empresa no formato padrão { data, page, total }", async () => {
+    const { token, projetoId } = await criarSessaoComProjeto();
+    await db
+      .insert(memorialDescritivo)
+      .values({ projetoId, numero: 1, respostasFormularioJson: {}, status: "gerado", documentoGeradoUrl: "/x" });
+
+    const response = await GET(criarRequestGet(token));
+
+    expect(response.status).toBe(200);
+    const corpo = await response.json();
+    expect(corpo.data).toHaveLength(1);
+    expect(corpo.data[0].status).toBe("gerado");
+    expect(typeof corpo.data[0].createdAt).toBe("string");
+    expect(corpo.total).toBe(1);
+    expect(corpo.page).toBe(1);
+  });
+
+  it("retorna lista vazia quando a empresa não tem memoriais", async () => {
+    const { token } = await criarSessaoComProjeto();
+
+    const response = await GET(criarRequestGet(token));
+
+    expect(response.status).toBe(200);
+    const corpo = await response.json();
+    expect(corpo.data).toEqual([]);
+    expect(corpo.total).toBe(0);
+  });
+
+  it("rejeita request sem sessão com 401", async () => {
+    const response = await GET(criarRequestGet());
+
+    expect(response.status).toBe(401);
   });
 });

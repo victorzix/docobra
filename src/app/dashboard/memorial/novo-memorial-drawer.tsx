@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 import type { Projeto } from "@/db/queries/projeto";
 import { Button } from "@/components/ui/button";
@@ -20,11 +20,11 @@ interface NovoMemorialDrawerProps {
 
 export function NovoMemorialDrawer({ projetos }: NovoMemorialDrawerProps) {
   const [open, setOpen] = useState(false);
-  const router = useRouter();
+  const queryClient = useQueryClient();
 
   function handleSuccess() {
     setOpen(false);
-    router.refresh();
+    queryClient.invalidateQueries({ queryKey: ["memoriais"] });
   }
 
   return (

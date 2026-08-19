@@ -11,6 +11,7 @@ export interface Memorial {
   status: string;
   documentoGeradoUrl: string | null;
   audioUrl: string | null;
+  respostasFormularioJson: unknown;
   createdAt: Date;
 }
 
@@ -25,6 +26,7 @@ const CAMPOS_MEMORIAL = {
   status: memorialDescritivo.status,
   documentoGeradoUrl: memorialDescritivo.documentoGeradoUrl,
   audioUrl: memorialDescritivo.audioUrl,
+  respostasFormularioJson: memorialDescritivo.respostasFormularioJson,
   createdAt: memorialDescritivo.createdAt,
 };
 
@@ -58,6 +60,13 @@ export async function buscarMemorialDaEmpresa(id: string, empresaId: string): Pr
     .where(and(eq(memorialDescritivo.id, id), eq(projeto.empresaId, empresaId)))
     .limit(1);
   return resultado ?? null;
+}
+
+export async function salvarAudioUrl(id: string, audioUrl: string): Promise<void> {
+  await db
+    .update(memorialDescritivo)
+    .set({ audioUrl, updatedAt: new Date() })
+    .where(eq(memorialDescritivo.id, id));
 }
 
 export async function marcarComoGerado(
