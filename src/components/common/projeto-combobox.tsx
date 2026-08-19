@@ -61,7 +61,8 @@ export function ProjetoCombobox({
               {projetos.map((projeto) => (
                 <CommandItem
                   key={projeto.id}
-                  value={projeto.nome}
+                  value={projeto.id}
+                  keywords={[projeto.nome]}
                   onSelect={() => {
                     onChange(projeto.id);
                     setOpen(false);

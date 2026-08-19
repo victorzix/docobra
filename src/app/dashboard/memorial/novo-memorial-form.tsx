@@ -6,12 +6,24 @@ import { Controller, useForm } from "react-hook-form";
 import type { Projeto } from "@/db/queries/projeto";
 import { criarMemorialSchema } from "@/lib/validations/memorial/create.schema";
 import { useCriarMemorial } from "@/hooks/use-criar-memorial";
+import { ComboboxCriavel } from "@/components/common/combobox-criavel";
 import { ProjetoCombobox } from "@/components/common/projeto-combobox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { GravadorAudio } from "./gravador-audio";
+
+const TIPOS_CONSTRUCAO_SUGERIDOS = [
+  "Residencial unifamiliar",
+  "Residencial multifamiliar",
+  "Comercial",
+  "Industrial",
+  "Institucional",
+  "Misto (comercial e residencial)",
+  "Reforma",
+  "Ampliação",
+];
 
 interface FormValues {
   projetoId: string;
@@ -99,7 +111,20 @@ export function NovoMemorialForm({ projetos, onSuccess }: NovoMemorialFormProps)
 
       <div className="grid gap-2">
         <Label htmlFor="tipoConstrucao">Tipo de construção</Label>
-        <Input id="tipoConstrucao" {...register("tipoConstrucao", { required: true })} />
+        <Controller
+          control={control}
+          name="tipoConstrucao"
+          rules={{ required: true }}
+          render={({ field }) => (
+            <ComboboxCriavel
+              opcoes={TIPOS_CONSTRUCAO_SUGERIDOS}
+              value={field.value}
+              onChange={field.onChange}
+              placeholder="Selecione ou digite o tipo..."
+              buscaPlaceholder="Buscar ou digitar..."
+            />
+          )}
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-4">
