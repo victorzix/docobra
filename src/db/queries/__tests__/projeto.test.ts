@@ -2,7 +2,13 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { db } from "@/db";
 import { empresa, projeto } from "@/db/schema";
-import { buscarProjetoDaEmpresa, criarProjeto, listarProjetos } from "../projeto";
+import {
+  buscarProjetoDaEmpresa,
+  contarProjetos,
+  criarProjeto,
+  listarProjetos,
+  listarProjetosPaginado,
+} from "../projeto";
 
 async function limparBanco() {
   await db.delete(projeto);
@@ -70,6 +76,73 @@ describe("listarProjetos", () => {
     const resultado = await listarProjetos(novaEmpresa.id);
 
     expect(resultado).toEqual([]);
+  });
+});
+
+describe("listarProjetosPaginado", () => {
+  beforeEach(limparBanco);
+  afterEach(limparBanco);
+
+  async function criarVariosProjetos(empresaId: string, quantidade: number) {
+    const base = new Date("2026-01-01T00:00:00Z").getTime();
+    for (let i = 0; i < quantidade; i++) {
+      await db.insert(projeto).values({
+        nome: `Projeto ${i + 1}`,
+        empresaId,
+        createdAt: new Date(base + i * 1000),
+      });
+    }
+  }
+
+  it("respeita o limite e informa nextCursor quando há mais páginas", async () => {
+    const [novaEmpresa] = await db.insert(empresa).values({ nome: "Ancar Engenharia" }).returning();
+    await criarVariosProjetos(novaEmpresa.id, 5);
+
+    const pagina = await listarProjetosPaginado(novaEmpresa.id, { limite: 3 });
+
+    expect(pagina.itens).toHaveLength(3);
+    expect(pagina.itens.map((p) => p.nome)).toEqual(["Projeto 5", "Projeto 4", "Projeto 3"]);
+    expect(pagina.nextCursor).not.toBeNull();
+  });
+
+  it("a segunda página, usando o cursor, traz os itens restantes sem repetir", async () => {
+    const [novaEmpresa] = await db.insert(empresa).values({ nome: "Ancar Engenharia" }).returning();
+    await criarVariosProjetos(novaEmpresa.id, 5);
+
+    const primeira = await listarProjetosPaginado(novaEmpresa.id, { limite: 3 });
+    const segunda = await listarProjetosPaginado(novaEmpresa.id, {
+      limite: 3,
+      cursor: primeira.nextCursor ?? undefined,
+    });
+
+    expect(segunda.itens.map((p) => p.nome)).toEqual(["Projeto 2", "Projeto 1"]);
+    expect(segunda.nextCursor).toBeNull();
+  });
+
+  it("nextCursor é null quando não há mais páginas", async () => {
+    const [novaEmpresa] = await db.insert(empresa).values({ nome: "Ancar Engenharia" }).returning();
+    await criarVariosProjetos(novaEmpresa.id, 2);
+
+    const pagina = await listarProjetosPaginado(novaEmpresa.id, { limite: 5 });
+
+    expect(pagina.itens).toHaveLength(2);
+    expect(pagina.nextCursor).toBeNull();
+  });
+});
+
+describe("contarProjetos", () => {
+  beforeEach(limparBanco);
+  afterEach(limparBanco);
+
+  it("conta só os projetos da empresa pedida", async () => {
+    const [empresaA] = await db.insert(empresa).values({ nome: "Empresa A" }).returning();
+    const [empresaB] = await db.insert(empresa).values({ nome: "Empresa B" }).returning();
+    await db.insert(projeto).values({ nome: "Projeto A1", empresaId: empresaA.id });
+    await db.insert(projeto).values({ nome: "Projeto A2", empresaId: empresaA.id });
+    await db.insert(projeto).values({ nome: "Projeto B1", empresaId: empresaB.id });
+
+    expect(await contarProjetos(empresaA.id)).toBe(2);
+    expect(await contarProjetos(empresaB.id)).toBe(1);
   });
 });
 

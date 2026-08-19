@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { lerArquivo, salvarArquivo } from "../storage";
 
-const DIR_STORAGE = path.join(process.cwd(), "storage", "memoriais");
+const DIR_STORAGE = path.join(process.cwd(), process.env.MEMORIAL_STORAGE_DIR ?? "storage/memoriais");
 
 describe("salvarArquivo / lerArquivo", () => {
   afterEach(async () => {

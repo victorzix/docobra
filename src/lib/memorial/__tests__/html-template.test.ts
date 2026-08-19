@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { gerarHtmlMemorial } from "../html-template";
 
 const DADOS_BASE = {
+  referencia: "MD-0001",
   projetoNome: "Casa da Praia",
   projetoEndereco: "Rua das Flores, 123",
   empresaNome: "Ancar Engenharia",
@@ -16,6 +17,7 @@ describe("gerarHtmlMemorial", () => {
   it("inclui os dados de identificação e os textos gerados", () => {
     const html = gerarHtmlMemorial(DADOS_BASE);
 
+    expect(html).toContain("MD-0001");
     expect(html).toContain("Casa da Praia");
     expect(html).toContain("Rua das Flores, 123");
     expect(html).toContain("Ancar Engenharia");

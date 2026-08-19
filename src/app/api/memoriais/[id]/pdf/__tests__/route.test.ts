@@ -27,7 +27,10 @@ describe("GET /api/memoriais/[id]/pdf", () => {
   beforeEach(limparBanco);
   afterEach(async () => {
     await limparBanco();
-    await rm(path.join(process.cwd(), "storage", "memoriais"), { recursive: true, force: true });
+    await rm(path.join(process.cwd(), process.env.MEMORIAL_STORAGE_DIR ?? "storage/memoriais"), {
+      recursive: true,
+      force: true,
+    });
   });
 
   it("retorna o PDF quando o memorial pertence à empresa e está gerado", async () => {

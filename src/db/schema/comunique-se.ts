@@ -1,9 +1,10 @@
-import { pgTable, uuid, varchar, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
 
 import { projeto } from "./projeto";
 
 export const comuniqueSe = pgTable("comunique_se", {
   id: uuid("id").defaultRandom().primaryKey(),
+  numero: integer("numero").notNull().default(0),
   projetoId: uuid("projeto_id")
     .notNull()
     .references(() => projeto.id, { onDelete: "cascade" }),

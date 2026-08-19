@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rm } from "node:fs/promises";
 import path from "node:path";
+import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { empresa, memorialDescritivo, projeto } from "@/db/schema";
@@ -13,7 +14,7 @@ vi.mock("@/core/llm", () => ({
 }));
 
 import { memorialRouter } from "@/core/llm";
-import { gerarMemorial } from "../gerar";
+import { gerarMemorial, regerarMemorial } from "../gerar";
 
 async function limparBanco() {
   await db.delete(memorialDescritivo);
@@ -48,7 +49,10 @@ describe("gerarMemorial", () => {
 
   afterEach(async () => {
     await limparBanco();
-    await rm(path.join(process.cwd(), "storage", "memoriais"), { recursive: true, force: true });
+    await rm(path.join(process.cwd(), process.env.MEMORIAL_STORAGE_DIR ?? "storage/memoriais"), {
+      recursive: true,
+      force: true,
+    });
   });
 
   it("modo texto: gera prosa via LLM e marca como gerado", async () => {
@@ -62,7 +66,7 @@ describe("gerarMemorial", () => {
         modoEspecificacoes: "texto",
         especificacoes: { fundacaoEstrutura: "Radier" },
       },
-      CONTEXTO,
+      { ...CONTEXTO, empresaId: novoProjeto.empresaId },
     );
 
     expect(resultado.status).toBe("gerado");
@@ -72,6 +76,10 @@ describe("gerarMemorial", () => {
 
     const [linha] = await db.select().from(memorialDescritivo);
     expect(linha.status).toBe("gerado");
+
+    const prosaCall = vi.mocked(memorialRouter.extractStructured).mock.calls[0][0];
+    expect(prosaCall.userPrompt).not.toContain(novoProjeto.id);
+    expect(prosaCall.userPrompt).toContain("Casa da Praia");
   });
 
   it("modo áudio: transcreve, extrai as especificações e depois gera a prosa", async () => {
@@ -97,7 +105,7 @@ describe("gerarMemorial", () => {
         audioBase64,
         audioMimeType: "audio/webm",
       },
-      CONTEXTO,
+      { ...CONTEXTO, empresaId: novoProjeto.empresaId },
     );
 
     expect(resultado.status).toBe("gerado");
@@ -114,6 +122,8 @@ describe("gerarMemorial", () => {
 
     const prosaCall = vi.mocked(memorialRouter.extractStructured).mock.calls[1][0];
     expect(prosaCall.userPrompt).not.toContain(audioBase64);
+    expect(prosaCall.userPrompt).not.toContain(novoProjeto.id);
+    expect(prosaCall.userPrompt).toContain("Casa da Praia");
   });
 
   it("propaga o erro e deixa o registro em rascunho quando o LLM falha", async () => {
@@ -123,12 +133,86 @@ describe("gerarMemorial", () => {
     await expect(
       gerarMemorial(
         { projetoId: novoProjeto.id, tipoConstrucao: "residencial", modoEspecificacoes: "texto" },
-        CONTEXTO,
+        { ...CONTEXTO, empresaId: novoProjeto.empresaId },
       ),
     ).rejects.toThrow("LLM indisponível");
 
     const [linha] = await db.select().from(memorialDescritivo);
     expect(linha.status).toBe("rascunho");
     expect(linha.documentoGeradoUrl).toBeNull();
+  });
+
+  it("modo áudio: se a prosa falhar, o audio e as especificações transcritas já ficam salvos", async () => {
+    const novoProjeto = await criarProjetoDeTeste();
+    vi.mocked(memorialRouter.transcribeAudio).mockResolvedValue("fundação é radier");
+    vi.mocked(memorialRouter.extractStructured)
+      .mockResolvedValueOnce({ data: { fundacaoEstrutura: "Radier" }, provider: "fake", raw: {} })
+      .mockRejectedValueOnce(new Error("LLM indisponível"));
+
+    const audioBase64 = Buffer.from("audio-fake").toString("base64");
+
+    await expect(
+      gerarMemorial(
+        {
+          projetoId: novoProjeto.id,
+          tipoConstrucao: "residencial",
+          modoEspecificacoes: "audio",
+          audioBase64,
+          audioMimeType: "audio/webm",
+        },
+        { ...CONTEXTO, empresaId: novoProjeto.empresaId },
+      ),
+    ).rejects.toThrow("LLM indisponível");
+
+    const [linha] = await db.select().from(memorialDescritivo);
+    expect(linha.status).toBe("rascunho");
+    expect(linha.audioUrl).toContain("-audio");
+    expect(linha.respostasFormularioJson).toMatchObject({
+      especificacoes: { fundacaoEstrutura: "Radier" },
+    });
+  });
+});
+
+describe("regerarMemorial", () => {
+  beforeEach(async () => {
+    await limparBanco();
+    vi.mocked(memorialRouter.transcribeAudio).mockReset();
+    vi.mocked(memorialRouter.extractStructured).mockReset();
+  });
+
+  afterEach(async () => {
+    await limparBanco();
+    await rm(path.join(process.cwd(), process.env.MEMORIAL_STORAGE_DIR ?? "storage/memoriais"), {
+      recursive: true,
+      force: true,
+    });
+  });
+
+  it("gera a prosa/PDF a partir das respostas já salvas, sem repetir a transcrição", async () => {
+    const novoProjeto = await criarProjetoDeTeste();
+    const [rascunho] = await db
+      .insert(memorialDescritivo)
+      .values({
+        projetoId: novoProjeto.id,
+        numero: 1,
+        status: "rascunho",
+        respostasFormularioJson: { especificacoes: { fundacaoEstrutura: "Radier" } },
+      })
+      .returning();
+    vi.mocked(memorialRouter.extractStructured).mockResolvedValue({ data: PROSA_FAKE, provider: "fake", raw: {} });
+
+    const resultado = await regerarMemorial(
+      rascunho.id,
+      rascunho.numero,
+      { tipoConstrucao: "residencial", especificacoes: { fundacaoEstrutura: "Radier" } },
+      { ...CONTEXTO, empresaId: novoProjeto.empresaId },
+    );
+
+    expect(resultado.status).toBe("gerado");
+    expect(memorialRouter.transcribeAudio).not.toHaveBeenCalled();
+
+    const [linha] = await db.select().from(memorialDescritivo).where(eq(memorialDescritivo.id, rascunho.id));
+    expect(linha.status).toBe("gerado");
+    expect(linha.documentoGeradoUrl).toBe(`/api/memoriais/${rascunho.id}/pdf`);
   });
 });

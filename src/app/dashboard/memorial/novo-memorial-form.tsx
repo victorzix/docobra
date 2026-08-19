@@ -1,17 +1,37 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { Controller, useForm, type FieldErrors } from "react-hook-form";
 
 import type { Projeto } from "@/db/queries/projeto";
 import { criarMemorialSchema } from "@/lib/validations/memorial/create.schema";
 import { useCriarMemorial } from "@/hooks/use-criar-memorial";
+import { ComboboxCriavel } from "@/components/common/combobox-criavel";
+import { ProjetoCombobox } from "@/components/common/projeto-combobox";
+import { LoadingSpinner } from "@/components/common/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { GravadorAudio } from "./gravador-audio";
+
+const TIPOS_CONSTRUCAO_SUGERIDOS = [
+  "Residencial unifamiliar",
+  "Residencial multifamiliar",
+  "Comercial",
+  "Industrial",
+  "Institucional",
+  "Misto (comercial e residencial)",
+  "Reforma",
+  "Ampliação",
+];
+
+const TOPICOS_ESPECIFICACOES = [
+  "Fundação e estrutura",
+  "Alvenaria e cobertura",
+  "Instalações elétrica e hidráulica",
+  "Acabamentos",
+];
 
 interface FormValues {
   projetoId: string;
@@ -27,18 +47,31 @@ interface FormValues {
 
 interface NovoMemorialFormProps {
   projetos: Projeto[];
+  onSuccess: () => void;
 }
 
-export function NovoMemorialForm({ projetos }: NovoMemorialFormProps) {
-  const router = useRouter();
+export function NovoMemorialForm({ projetos, onSuccess }: NovoMemorialFormProps) {
   const [modo, setModo] = useState<"texto" | "audio">("texto");
   const [audio, setAudio] = useState<{ base64: string; mimeType: string } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const criar = useCriarMemorial();
-  const { register, handleSubmit } = useForm<FormValues>();
+  const { register, handleSubmit, control } = useForm<FormValues>();
+  const erroRef = useRef<HTMLParagraphElement>(null);
 
-  function onInvalid() {
-    setErro("Preencha os campos obrigatórios corretamente.");
+  useEffect(() => {
+    if (erro) {
+      erroRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [erro]);
+
+  function onInvalid(errors: FieldErrors<FormValues>) {
+    const idDoPrimeiroCampo = errors.projetoId
+      ? "campo-projetoId"
+      : errors.tipoConstrucao
+        ? "campo-tipoConstrucao"
+        : null;
+
+    document.getElementById(idDoPrimeiroCampo ?? "")?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   function onSubmit(values: FormValues) {
@@ -78,28 +111,53 @@ export function NovoMemorialForm({ projetos }: NovoMemorialFormProps) {
     }
 
     criar.mutate(parsed.data, {
-      onSuccess: () => router.push("/dashboard/memorial"),
+      onSuccess: () => onSuccess(),
       onError: (error) => setErro(error.message),
     });
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="grid gap-6">
-      <div className="grid gap-2">
+    <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="relative grid gap-6">
+      {criar.isPending && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/95">
+          <LoadingSpinner label="Gerando memorial" />
+        </div>
+      )}
+
+      <div id="campo-projetoId" className="grid gap-2">
         <Label htmlFor="projetoId">Projeto</Label>
-        <select id="projetoId" {...register("projetoId", { required: true })} className="rounded-md border p-2">
-          <option value="">Selecione...</option>
-          {projetos.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nome}
-            </option>
-          ))}
-        </select>
+        <Controller
+          control={control}
+          name="projetoId"
+          rules={{ required: "Selecione um projeto." }}
+          render={({ field, fieldState }) => (
+            <>
+              <ProjetoCombobox projetos={projetos} value={field.value} onChange={field.onChange} />
+              {fieldState.error && <p className="text-xs text-destructive">{fieldState.error.message}</p>}
+            </>
+          )}
+        />
       </div>
 
-      <div className="grid gap-2">
+      <div id="campo-tipoConstrucao" className="grid gap-2">
         <Label htmlFor="tipoConstrucao">Tipo de construção</Label>
-        <Input id="tipoConstrucao" {...register("tipoConstrucao", { required: true })} />
+        <Controller
+          control={control}
+          name="tipoConstrucao"
+          rules={{ required: "Informe o tipo de construção." }}
+          render={({ field, fieldState }) => (
+            <>
+              <ComboboxCriavel
+                opcoes={TIPOS_CONSTRUCAO_SUGERIDOS}
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Selecione ou digite o tipo..."
+                buscaPlaceholder="Buscar ou digitar..."
+              />
+              {fieldState.error && <p className="text-xs text-destructive">{fieldState.error.message}</p>}
+            </>
+          )}
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -136,11 +194,27 @@ export function NovoMemorialForm({ projetos }: NovoMemorialFormProps) {
             <Textarea placeholder="Acabamentos" {...register("acabamentos")} />
           </div>
         ) : (
-          <GravadorAudio onGravado={(base64, mimeType) => setAudio({ base64, mimeType })} />
+          <div className="grid gap-3">
+            <div className="rounded-lg border border-dashed border-border p-3">
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+                Cubra esses tópicos na gravação:
+              </p>
+              <ul className="grid list-inside list-disc gap-1 text-sm marker:text-primary">
+                {TOPICOS_ESPECIFICACOES.map((topico) => (
+                  <li key={topico}>{topico}</li>
+                ))}
+              </ul>
+            </div>
+            <GravadorAudio onGravado={(base64, mimeType) => setAudio({ base64, mimeType })} />
+          </div>
         )}
       </div>
 
-      {erro && <p className="text-destructive text-sm">{erro}</p>}
+      {erro && (
+        <p ref={erroRef} className="text-destructive text-sm">
+          {erro}
+        </p>
+      )}
       <Button type="submit" disabled={criar.isPending}>
         {criar.isPending ? "Gerando..." : "Gerar memorial"}
       </Button>
