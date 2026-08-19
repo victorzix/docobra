@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+storage
+
+.env
+.env.*
+!.env.example
+
+docs
+*.md
+!README.md
+
+.vscode
+.playwright-mcp
+coverage
