@@ -60,7 +60,15 @@ function DrawerContent({
         {...props}
       >
         <div className="mx-auto mt-4 hidden h-2 w-[100px] shrink-0 rounded-full bg-muted group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
+        <div
+          className={cn(
+            "flex min-h-0 flex-1 flex-col overflow-y-auto",
+            "[scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]",
+            "[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent",
+          )}
+        >
+          {children}
+        </div>
       </DrawerPrimitive.Content>
     </DrawerPortal>
   );
