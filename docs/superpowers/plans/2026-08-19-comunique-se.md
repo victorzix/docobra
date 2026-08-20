@@ -15,6 +15,7 @@
 - O `id` de cada `comunique_se` é gerado em código (`crypto.randomUUID()`), **não** pelo `defaultRandom()` do Postgres — porque `pdfOriginalUrl` é `NOT NULL` no schema (`src/db/schema/comunique-se.ts:11`) e precisa existir desde o insert. Gerar o `id` antes, montar `pdfOriginalUrl` a partir dele, salvar o PDF, e só então inserir a linha (uma única inserção, sem update parcial depois).
 - Falha em qualquer etapa de extração/LLM (depois da linha já inserida) marca `status: "erro"` (diferente do memorial, que fica implicitamente em `rascunho`) — decisão já fechada no design spec.
 - PDF fica em `storage/comunique-se/` (disco local) — **já coberto** pelo `/storage/` no `.gitignore` (adicionado no plano do memorial), nenhuma mudança necessária ali.
+- **`.env.test` precisa de `COMUNIQUE_SE_STORAGE_DIR="storage/comunique-se-test"`** — mesmo motivo do commit `bdba512` (`fix(memorial): isola storage de teste da pasta real usada em dev`): sem isso, os testes de storage/pipeline usam o mesmo diretório default do dev (`storage/comunique-se`) e o `afterEach` de cada teste apaga essa pasta de verdade — já causou perda real de PDFs uma vez neste projeto (para o memorial). Adicionar essa variável faz parte da Task 2.
 - Limite de upload: 10MB (verificado no buffer decodificado, antes de qualquer inserção no banco).
 - `POST /api/comunique-se`, `POST /api/comunique-se/[id]/retry`, `PATCH /api/comunique-se/[id]/itens` e `GET /api/comunique-se/[id]/pdf` leem a sessão direto do `NextRequest` (não `getSessionUser()`) — mesmo motivo já estabelecido no memorial: `next/headers`'s `cookies()` lança fora do request scope real do Next, quebrando testes que chamam os handlers direto.
 - Sem teste de UI (mesmo padrão do projeto, sem RTL/jsdom) — cobertura por testes de integração (query layer, pipeline, rotas) + verificação manual (Task 12).
@@ -44,7 +45,7 @@ declare module "pdf-parse/lib/pdf-parse.js" {
     numpages: number;
   }
 
-  function pdfParse(dataBuffer: Buffer): Promise<PdfParseResultado>;
+  function pdfParse(dataBuffer: Uint8Array): Promise<PdfParseResultado>;
 
   export default pdfParse;
 }
@@ -64,7 +65,7 @@ async function gerarPdfDeTeste(html: string): Promise<Buffer> {
   const browser = await puppeteer.launch({ headless: true });
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.setContent(html, { waitUntil: "load" });
     const pdf = await page.pdf({ format: "a4" });
     return Buffer.from(pdf);
   } finally {
@@ -103,8 +104,12 @@ Crie `src/lib/comunique-se/extrair-texto.ts`:
 ```ts
 import pdfParse from "pdf-parse/lib/pdf-parse.js";
 
+// Buffers pequenos (< 4KB) podem vir de um pool interno do Node com
+// byteOffset != 0; o pdf.js vendorizado dentro do pdf-parse ignora esse
+// offset e lê o ArrayBuffer inteiro, corrompendo o parse ("bad XRef
+// entry"). new Uint8Array(buffer) copia só a janela válida, sem esse risco.
 export async function extrairTextoPdf(buffer: Buffer): Promise<string> {
-  const resultado = await pdfParse(buffer);
+  const resultado = await pdfParse(new Uint8Array(buffer));
   return resultado.text.trim();
 }
 ```
@@ -231,10 +236,24 @@ Em `.env.example`, logo abaixo do comentário sobre `PUPPETEER_EXECUTABLE_PATH` 
 COMUNIQUE_SE_STORAGE_DIR=""
 ```
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Isolar o storage de teste do storage de dev em `.env.test`**
+
+Em `.env.test`, logo abaixo de `MEMORIAL_STORAGE_DIR` (não remova nada existente), adicione:
+
+```
+# Mesmo motivo do MEMORIAL_STORAGE_DIR acima: os testes apagam essa pasta a
+# cada execucao, e usar a mesma do dev ja causou perda de PDFs reais antes.
+COMUNIQUE_SE_STORAGE_DIR="storage/comunique-se-test"
+```
+
+Sem isso, `storage.ts` cai no default (`storage/comunique-se`, a mesma pasta
+onde o app grava os PDFs em dev) durante os testes, e o `afterEach` de cada
+teste apaga essa pasta de verdade.
+
+- [ ] **Step 7: Commit**
 
 ```bash
-git add .env.example src/lib/comunique-se/storage.ts src/lib/comunique-se/__tests__/storage.test.ts
+git add .env.example .env.test src/lib/comunique-se/storage.ts src/lib/comunique-se/__tests__/storage.test.ts
 git commit -m "feat: add local file storage and PDF magic-number validation for comunique-se"
 ```
 
@@ -597,7 +616,7 @@ import { criarComuniqueSeSchema } from "../create.schema";
 describe("criarComuniqueSeSchema", () => {
   it("aceita projetoId válido e pdfBase64 não vazio", () => {
     const resultado = criarComuniqueSeSchema.safeParse({
-      projetoId: "11111111-1111-1111-1111-111111111111",
+      projetoId: "11111111-1111-4111-8111-111111111111",
       pdfBase64: "JVBERi0=",
     });
 
@@ -612,7 +631,7 @@ describe("criarComuniqueSeSchema", () => {
 
   it("rejeita pdfBase64 vazio", () => {
     const resultado = criarComuniqueSeSchema.safeParse({
-      projetoId: "11111111-1111-1111-1111-111111111111",
+      projetoId: "11111111-1111-4111-8111-111111111111",
       pdfBase64: "",
     });
 
@@ -769,7 +788,7 @@ async function gerarPdfDeTeste(html: string): Promise<Buffer> {
   const browser = await puppeteer.launch({ headless: true });
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.setContent(html, { waitUntil: "load" });
     const pdf = await page.pdf({ format: "a4" });
     return Buffer.from(pdf);
   } finally {
