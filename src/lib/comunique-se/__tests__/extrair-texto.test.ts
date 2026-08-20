@@ -7,7 +7,7 @@ async function gerarPdfDeTeste(html: string): Promise<Buffer> {
   const browser = await puppeteer.launch({ headless: true });
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.setContent(html, { waitUntil: "load" });
     const pdf = await page.pdf({ format: "a4" });
     return Buffer.from(pdf);
   } finally {
