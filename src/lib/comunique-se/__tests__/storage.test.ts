@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { ehPdfValido, lerArquivo, salvarArquivo, TAMANHO_MAXIMO_PDF_BYTES } from "../storage";
 
-const DIR_STORAGE = path.join(process.cwd(), "storage", "comunique-se");
+const DIR_STORAGE = path.join(process.cwd(), process.env.COMUNIQUE_SE_STORAGE_DIR ?? "storage/comunique-se");
 
 describe("salvarArquivo / lerArquivo", () => {
   afterEach(async () => {
