@@ -2373,9 +2373,10 @@ git commit -m "feat: add comunique-se list page and upload drawer"
 **Files:**
 - Create: `src/app/dashboard/comunique-se/[id]/page.tsx`
 - Create: `src/app/dashboard/comunique-se/[id]/checklist-itens.tsx`
+- Create: `src/app/dashboard/comunique-se/[id]/retry-comunique-se-button.tsx`
 
 **Interfaces:**
-- Consumes: `buscarComuniqueSeDaEmpresa` (Task 3), `useAlternarItemChecklist` (Task 9), `referenciaComuniqueSe` (já existe), `useRetryComuniqueSe` (Task 9), `Checkbox` de `@/components/ui/checkbox` (já existe).
+- Consumes: `buscarComuniqueSeDaEmpresa` (Task 3), `useAlternarItemChecklist` (Task 9), `referenciaComuniqueSe` (já existe), `useRetryComuniqueSe` (Task 9), `Checkbox` de `@/components/ui/checkbox` (já existe). O design spec (`docs/superpowers/specs/2026-08-19-comunique-se-design.md:156-157`) exige um botão de retry no estado `erro` **desta página de detalhe**, não só na lista — como a página é um Server Component, o botão vira um client component próprio que chama `router.refresh()` no sucesso pra re-buscar os dados server-side.
 - Produces: nada consumido por tasks futuras.
 
 **Sem teste automatizado nesta task** — mesmo padrão do resto da UI. Cobertura vem da verificação manual (Task 12).
@@ -2439,7 +2440,46 @@ export function ChecklistItens({ comuniqueSeId, itensIniciais }: ChecklistItensP
 }
 ```
 
-- [ ] **Step 2: Página de detalhe**
+- [ ] **Step 2: Botão de retry (client component)**
+
+Crie `src/app/dashboard/comunique-se/[id]/retry-comunique-se-button.tsx`:
+
+```tsx
+"use client";
+
+import { useRouter } from "next/navigation";
+import { RefreshCw } from "lucide-react";
+
+import { useRetryComuniqueSe } from "@/hooks/use-retry-comunique-se";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+interface RetryComuniqueSeButtonProps {
+  comuniqueSeId: string;
+}
+
+export function RetryComuniqueSeButton({ comuniqueSeId }: RetryComuniqueSeButtonProps) {
+  const router = useRouter();
+  const retry = useRetryComuniqueSe();
+
+  function handleRetry() {
+    retry.mutate(comuniqueSeId, {
+      onSuccess: () => router.refresh(),
+    });
+  }
+
+  return (
+    <Button type="button" variant="outline" size="sm" disabled={retry.isPending} onClick={handleRetry}>
+      <RefreshCw className={cn("size-4", retry.isPending && "animate-spin")} />
+      Tentar novamente
+    </Button>
+  );
+}
+```
+
+`router.refresh()` re-executa o Server Component da rota atual (busca os dados de novo, sem navegação de verdade) — necessário aqui porque essa página não usa React Query como a lista usa; o estado vem só do fetch server-side.
+
+- [ ] **Step 3: Página de detalhe**
 
 Crie `src/app/dashboard/comunique-se/[id]/page.tsx`:
 
@@ -2451,6 +2491,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { buscarComuniqueSeDaEmpresa } from "@/db/queries/comunique-se";
 import { referenciaComuniqueSe } from "@/lib/referencia";
 import { ChecklistItens } from "./checklist-itens";
+import { RetryComuniqueSeButton } from "./retry-comunique-se-button";
 
 export const metadata: Metadata = {
   title: "Comunique-se",
@@ -2481,9 +2522,10 @@ export default async function ComuniqueSeDetalhePage({ params }: { params: Promi
         <p className="text-muted-foreground">Processando o Comunique-se...</p>
       )}
       {comuniqueSeEncontrado.status === "erro" && (
-        <p className="text-destructive">
-          Não foi possível processar esse Comunique-se. Volte pra lista e tente novamente.
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-destructive">Não foi possível processar esse Comunique-se.</p>
+          <RetryComuniqueSeButton comuniqueSeId={comuniqueSeEncontrado.id} />
+        </div>
       )}
       {comuniqueSeEncontrado.status === "pronto" && comuniqueSeEncontrado.checklistJson && (
         <ChecklistItens
@@ -2496,7 +2538,7 @@ export default async function ComuniqueSeDetalhePage({ params }: { params: Promi
 }
 ```
 
-- [ ] **Step 3: Rodar a suíte inteira e o build**
+- [ ] **Step 4: Rodar a suíte inteira e o build**
 
 Run: `npm test`
 Expected: PASS.
@@ -2504,7 +2546,7 @@ Expected: PASS.
 Run: `npm run build`
 Expected: build passa, `/dashboard/comunique-se/[id]` aparece na saída como rota gerada.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add "src/app/dashboard/comunique-se/[id]"
