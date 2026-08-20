@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { buscarComuniqueSeDaEmpresa } from "@/db/queries/comunique-se";
 import { referenciaComuniqueSe } from "@/lib/referencia";
 import { ChecklistItens } from "./checklist-itens";
+import { RetryComuniqueSeButton } from "./retry-comunique-se-button";
 
 export const metadata: Metadata = {
   title: "Comunique-se",
@@ -35,9 +36,10 @@ export default async function ComuniqueSeDetalhePage({ params }: { params: Promi
         <p className="text-muted-foreground">Processando o Comunique-se...</p>
       )}
       {comuniqueSeEncontrado.status === "erro" && (
-        <p className="text-destructive">
-          Não foi possível processar esse Comunique-se. Volte pra lista e tente novamente.
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-destructive">Não foi possível processar esse Comunique-se.</p>
+          <RetryComuniqueSeButton comuniqueSeId={comuniqueSeEncontrado.id} />
+        </div>
       )}
       {comuniqueSeEncontrado.status === "pronto" && comuniqueSeEncontrado.checklistJson && (
         <ChecklistItens
