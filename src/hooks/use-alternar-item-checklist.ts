@@ -31,5 +31,5 @@ async function alternarItemRequest(input: {
 }
 
 export function useAlternarItemChecklist() {
-  return useMutation({ mutationFn: alternarItemRequest });
+  return useMutation({ mutationFn: alternarItemRequest, scope: { id: "checklist-itens" } });
 }

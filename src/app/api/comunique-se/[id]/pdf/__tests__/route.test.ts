@@ -10,6 +10,8 @@ import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import { salvarArquivo } from "@/lib/comunique-se/storage";
 import { GET } from "@/app/api/comunique-se/[id]/pdf/route";
 
+const DIR_STORAGE = path.join(process.cwd(), process.env.COMUNIQUE_SE_STORAGE_DIR ?? "storage/comunique-se");
+
 async function limparBanco() {
   await db.delete(comuniqueSe);
   await db.delete(usuario);
@@ -27,7 +29,7 @@ describe("GET /api/comunique-se/[id]/pdf", () => {
   beforeEach(limparBanco);
   afterEach(async () => {
     await limparBanco();
-    await rm(path.join(process.cwd(), "storage", "comunique-se"), { recursive: true, force: true });
+    await rm(DIR_STORAGE, { recursive: true, force: true });
   });
 
   it("retorna o PDF quando o Comunique-se pertence à empresa", async () => {

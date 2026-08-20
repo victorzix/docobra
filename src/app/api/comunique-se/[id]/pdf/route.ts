@@ -20,6 +20,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: "Comunique-se não encontrado." }, { status: 404 });
   }
 
-  const pdf = await lerArquivo(`${id}.pdf`);
-  return new NextResponse(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf" } });
+  try {
+    const pdf = await lerArquivo(`${id}.pdf`);
+    return new NextResponse(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf" } });
+  } catch (error) {
+    console.error("[GET /api/comunique-se/[id]/pdf]", error);
+    return NextResponse.json({ error: "Comunique-se não encontrado." }, { status: 404 });
+  }
 }

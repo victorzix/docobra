@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import type { Projeto } from "@/db/queries/projeto";
@@ -36,7 +36,6 @@ export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeForm
   const [erro, setErro] = useState<string | null>(null);
   const criar = useCriarComuniqueSe();
   const { handleSubmit, control } = useForm<FormValues>();
-  const inputArquivoRef = useRef<HTMLInputElement>(null);
 
   function handleArquivoSelecionado(event: React.ChangeEvent<HTMLInputElement>) {
     const selecionado = event.target.files?.[0] ?? null;
@@ -109,7 +108,6 @@ export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeForm
       <div className="grid gap-2">
         <Label htmlFor="pdf">Arquivo do Comunique-se (PDF)</Label>
         <input
-          ref={inputArquivoRef}
           id="pdf"
           type="file"
           accept="application/pdf"

@@ -18,22 +18,27 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
-  const lista = await listarComuniqueSe(sessao.empresaId);
+  try {
+    const lista = await listarComuniqueSe(sessao.empresaId);
 
-  const body: PaginatedResponse<ComuniqueSeResponse> = {
-    data: lista.map((c) => ({
-      id: c.id,
-      numero: c.numero,
-      projetoNome: c.projetoNome,
-      status: c.status,
-      pdfOriginalUrl: c.pdfOriginalUrl,
-      createdAt: c.createdAt.toISOString(),
-    })),
-    page: 1,
-    total: lista.length,
-  };
+    const body: PaginatedResponse<ComuniqueSeResponse> = {
+      data: lista.map((c) => ({
+        id: c.id,
+        numero: c.numero,
+        projetoNome: c.projetoNome,
+        status: c.status,
+        pdfOriginalUrl: c.pdfOriginalUrl,
+        createdAt: c.createdAt.toISOString(),
+      })),
+      page: 1,
+      total: lista.length,
+    };
 
-  return NextResponse.json(body);
+    return NextResponse.json(body);
+  } catch (error) {
+    console.error("[GET /api/comunique-se]", error);
+    return NextResponse.json({ error: "Erro interno, tente novamente." }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
