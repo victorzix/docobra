@@ -16,6 +16,8 @@ import { comuniqueSeRouter } from "@/core/llm";
 import { processarComuniqueSe, reprocessarComuniqueSe } from "../processar";
 import { lerArquivo, salvarArquivo } from "../storage";
 
+const DIR_STORAGE = path.join(process.cwd(), process.env.COMUNIQUE_SE_STORAGE_DIR ?? "storage/comunique-se");
+
 async function limparBanco() {
   await db.delete(comuniqueSe);
   await db.delete(projeto);
@@ -54,7 +56,7 @@ describe("processarComuniqueSe", () => {
 
   afterEach(async () => {
     await limparBanco();
-    await rm(path.join(process.cwd(), "storage", "comunique-se"), { recursive: true, force: true });
+    await rm(DIR_STORAGE, { recursive: true, force: true });
   });
 
   it("processa com sucesso: extrai texto, chama o LLM e marca pronto", async () => {
@@ -128,7 +130,7 @@ describe("reprocessarComuniqueSe", () => {
 
   afterEach(async () => {
     await limparBanco();
-    await rm(path.join(process.cwd(), "storage", "comunique-se"), { recursive: true, force: true });
+    await rm(DIR_STORAGE, { recursive: true, force: true });
   });
 
   it("relê o PDF salvo em disco (sem receber buffer novo) e reprocessa com sucesso", async () => {
