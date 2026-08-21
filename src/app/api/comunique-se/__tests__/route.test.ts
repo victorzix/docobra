@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { comuniqueSe, empresa, projeto, usuario } from "@/db/schema";
 import { assinarToken } from "@/lib/auth/jwt";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
+import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 
 vi.mock("@/lib/comunique-se/processar", () => ({
   processarComuniqueSe: vi.fn(),
@@ -141,6 +142,19 @@ describe("POST /api/comunique-se", () => {
     );
 
     expect(response.status).toBe(500);
+  });
+
+  it("retorna 500 com o id da linha quando processarComuniqueSe lança CriacaoParcialError", async () => {
+    const { token, projetoId } = await criarSessaoComProjeto();
+    vi.mocked(processarComuniqueSe).mockRejectedValue(new CriacaoParcialError("falhou", "linha-123"));
+
+    const response = await POST(
+      criarRequestPost({ modoCriacao: "pdf", projetoId, pdfBase64: PDF_BASE64_FAKE }, token),
+    );
+
+    expect(response.status).toBe(500);
+    const corpo = await response.json();
+    expect(corpo.id).toBe("linha-123");
   });
 
   it("modoCriacao manual: rejeita sem nenhum item com 400, sem chamar criarComuniqueSeManual", async () => {

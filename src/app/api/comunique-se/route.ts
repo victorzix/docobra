@@ -9,6 +9,7 @@ import type { ComuniqueSeResponse } from "@/lib/validations/comunique-se/respons
 import type { PaginatedResponse } from "@/lib/pagination";
 import { criarComuniqueSeManual, processarComuniqueSe } from "@/lib/comunique-se/processar";
 import { ehPdfValido, TAMANHO_MAXIMO_PDF_BYTES } from "@/lib/comunique-se/storage";
+import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
@@ -96,6 +97,9 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json({ comuniqueSe: resultado }, { status: 201 });
   } catch (error) {
+    if (error instanceof CriacaoParcialError) {
+      return NextResponse.json({ error: error.message, id: error.id }, { status: 500 });
+    }
     console.error("[POST /api/comunique-se]", error);
     return NextResponse.json({ error: "Erro ao processar o Comunique-se, tente novamente." }, { status: 500 });
   }
