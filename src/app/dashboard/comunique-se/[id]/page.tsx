@@ -6,6 +6,7 @@ import { buscarComuniqueSeDaEmpresa } from "@/db/queries/comunique-se";
 import { referenciaComuniqueSe } from "@/lib/referencia";
 import { ChecklistItens } from "./checklist-itens";
 import { RetryComuniqueSeButton } from "./retry-comunique-se-button";
+import { DownloadButton } from "@/components/common/download-button";
 
 export const metadata: Metadata = {
   title: "Comunique-se",
@@ -29,14 +30,20 @@ export default async function ComuniqueSeDetalhePage({ params }: { params: Promi
         <h1 className="text-2xl font-semibold">Checklist do Comunique-se</h1>
         <div className="flex gap-3">
           {comuniqueSeEncontrado.pdfOriginalUrl && (
-            <a href={comuniqueSeEncontrado.pdfOriginalUrl} className="text-sm underline">
-              Baixar PDF original
-            </a>
+            <DownloadButton
+              href={comuniqueSeEncontrado.pdfOriginalUrl}
+              filename={`comunique-se-${referenciaComuniqueSe(comuniqueSeEncontrado.numero)}-original.pdf`}
+              label="Baixar PDF original"
+              loadingLabel="Baixando..."
+            />
           )}
           {comuniqueSeEncontrado.status === "pronto" && (
-            <a href={`/api/comunique-se/${comuniqueSeEncontrado.id}/modelo`} download className="text-sm underline">
-              Baixar modelo
-            </a>
+            <DownloadButton
+              href={`/api/comunique-se/${comuniqueSeEncontrado.id}/modelo`}
+              filename={`modelo-${referenciaComuniqueSe(comuniqueSeEncontrado.numero)}.pdf`}
+              label="Baixar modelo"
+              loadingLabel="Gerando..."
+            />
           )}
         </div>
       </div>
