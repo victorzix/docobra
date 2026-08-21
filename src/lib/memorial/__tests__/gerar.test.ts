@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { empresa, memorialDescritivo, projeto } from "@/db/schema";
+import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 
 vi.mock("@/core/llm", () => ({
   memorialRouter: {
@@ -126,20 +127,27 @@ describe("gerarMemorial", () => {
     expect(prosaCall.userPrompt).toContain("Casa da Praia");
   });
 
-  it("propaga o erro e deixa o registro em rascunho quando o LLM falha", async () => {
+  it("propaga CriacaoParcialError e deixa o registro em rascunho quando o LLM falha", async () => {
     const novoProjeto = await criarProjetoDeTeste();
     vi.mocked(memorialRouter.extractStructured).mockRejectedValue(new Error("LLM indisponível"));
 
-    await expect(
-      gerarMemorial(
+    let erroCapturado: unknown;
+    try {
+      await gerarMemorial(
         { projetoId: novoProjeto.id, tipoConstrucao: "residencial", modoEspecificacoes: "texto" },
         { ...CONTEXTO, empresaId: novoProjeto.empresaId },
-      ),
-    ).rejects.toThrow("LLM indisponível");
+      );
+    } catch (erro) {
+      erroCapturado = erro;
+    }
+
+    expect(erroCapturado).toBeInstanceOf(CriacaoParcialError);
+    expect((erroCapturado as CriacaoParcialError).message).toBe("LLM indisponível");
 
     const [linha] = await db.select().from(memorialDescritivo);
     expect(linha.status).toBe("rascunho");
     expect(linha.documentoGeradoUrl).toBeNull();
+    expect((erroCapturado as CriacaoParcialError).id).toBe(linha.id);
   });
 
   it("modo áudio: se a prosa falhar, o audio e as especificações transcritas já ficam salvos", async () => {

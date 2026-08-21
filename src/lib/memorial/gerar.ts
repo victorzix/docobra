@@ -1,6 +1,7 @@
 import { memorialRouter } from "@/core/llm";
 import { criarMemorialRascunho, marcarComoGerado, salvarAudioUrl } from "@/db/queries/memorial";
 import type { CriarMemorialInput } from "@/lib/validations/memorial/create.schema";
+import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 import { referenciaMemorial } from "@/lib/referencia";
 import { gerarHtmlMemorial } from "./html-template";
 import { gerarPdf } from "./pdf";
@@ -67,48 +68,52 @@ async function finalizarGeracao(
   respostas: RespostasParaGeracao,
   contexto: ContextoMemorial,
 ): Promise<ResultadoGeracao> {
-  const dadosParaProsa = {
-    projeto: contexto.projetoNome,
-    endereco: contexto.projetoEndereco ?? undefined,
-    tipoConstrucao: respostas.tipoConstrucao,
-    numeroPavimentos: respostas.numeroPavimentos,
-    areaConstruida: respostas.areaConstruida,
-    areaTerreno: respostas.areaTerreno,
-    especificacoes: respostas.especificacoes,
-  };
+  try {
+    const dadosParaProsa = {
+      projeto: contexto.projetoNome,
+      endereco: contexto.projetoEndereco ?? undefined,
+      tipoConstrucao: respostas.tipoConstrucao,
+      numeroPavimentos: respostas.numeroPavimentos,
+      areaConstruida: respostas.areaConstruida,
+      areaTerreno: respostas.areaTerreno,
+      especificacoes: respostas.especificacoes,
+    };
 
-  const prosa = await memorialRouter.extractStructured<{
-    descricaoGeral: string;
-    especificacoesTecnicas: string;
-  }>({
-    systemPrompt:
-      "Você é um engenheiro redigindo um memorial descritivo técnico em português formal, seguindo a norma ABNT. " +
-      "Refira-se ao projeto pelo nome informado — nunca inclua identificadores técnicos (IDs, UUIDs) no texto.",
-    userPrompt: JSON.stringify(dadosParaProsa),
-    schema: SCHEMA_PROSA,
-  });
+    const prosa = await memorialRouter.extractStructured<{
+      descricaoGeral: string;
+      especificacoesTecnicas: string;
+    }>({
+      systemPrompt:
+        "Você é um engenheiro redigindo um memorial descritivo técnico em português formal, seguindo a norma ABNT. " +
+        "Refira-se ao projeto pelo nome informado — nunca inclua identificadores técnicos (IDs, UUIDs) no texto.",
+      userPrompt: JSON.stringify(dadosParaProsa),
+      schema: SCHEMA_PROSA,
+    });
 
-  const html = gerarHtmlMemorial({
-    referencia: referenciaMemorial(numero),
-    projetoNome: contexto.projetoNome,
-    projetoEndereco: contexto.projetoEndereco,
-    empresaNome: contexto.empresaNome,
-    usuarioNome: contexto.usuarioNome,
-    tipoConstrucao: respostas.tipoConstrucao,
-    numeroPavimentos: respostas.numeroPavimentos,
-    areaConstruida: respostas.areaConstruida,
-    areaTerreno: respostas.areaTerreno,
-    descricaoGeral: prosa.data.descricaoGeral,
-    especificacoesTecnicas: prosa.data.especificacoesTecnicas,
-  });
+    const html = gerarHtmlMemorial({
+      referencia: referenciaMemorial(numero),
+      projetoNome: contexto.projetoNome,
+      projetoEndereco: contexto.projetoEndereco,
+      empresaNome: contexto.empresaNome,
+      usuarioNome: contexto.usuarioNome,
+      tipoConstrucao: respostas.tipoConstrucao,
+      numeroPavimentos: respostas.numeroPavimentos,
+      areaConstruida: respostas.areaConstruida,
+      areaTerreno: respostas.areaTerreno,
+      descricaoGeral: prosa.data.descricaoGeral,
+      especificacoesTecnicas: prosa.data.especificacoesTecnicas,
+    });
 
-  const pdfBuffer = await gerarPdf(html);
-  await salvarArquivo(`${memorialId}.pdf`, pdfBuffer);
-  const documentoGeradoUrl = `/api/memoriais/${memorialId}/pdf`;
+    const pdfBuffer = await gerarPdf(html);
+    await salvarArquivo(`${memorialId}.pdf`, pdfBuffer);
+    const documentoGeradoUrl = `/api/memoriais/${memorialId}/pdf`;
 
-  await marcarComoGerado(memorialId, { documentoGeradoUrl });
+    await marcarComoGerado(memorialId, { documentoGeradoUrl });
 
-  return { id: memorialId, numero, status: "gerado", documentoGeradoUrl };
+    return { id: memorialId, numero, status: "gerado", documentoGeradoUrl };
+  } catch (error) {
+    throw new CriacaoParcialError(error instanceof Error ? error.message : "Erro ao gerar o memorial.", memorialId);
+  }
 }
 
 export async function gerarMemorial(
