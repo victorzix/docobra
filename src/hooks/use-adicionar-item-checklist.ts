@@ -10,16 +10,11 @@ interface ApiErrorBody {
   error: string;
 }
 
-async function alternarItemRequest(input: {
-  comuniqueSeId: string;
-  itemId: string;
-  concluida?: boolean;
-  descricao?: string;
-}): Promise<ChecklistItem[]> {
+async function adicionarItemRequest(input: { comuniqueSeId: string; descricao: string }): Promise<ChecklistItem[]> {
   const response = await fetch(`/api/comunique-se/${input.comuniqueSeId}/itens`, {
-    method: "PATCH",
+    method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ itemId: input.itemId, concluida: input.concluida, descricao: input.descricao }),
+    body: JSON.stringify({ descricao: input.descricao }),
   });
 
   const data = (await response.json()) as { itens: ChecklistItem[] } | ApiErrorBody;
@@ -31,6 +26,6 @@ async function alternarItemRequest(input: {
   return (data as { itens: ChecklistItem[] }).itens;
 }
 
-export function useAlternarItemChecklist() {
-  return useMutation({ mutationFn: alternarItemRequest, scope: { id: "checklist-itens" } });
+export function useAdicionarItemChecklist() {
+  return useMutation({ mutationFn: adicionarItemRequest, scope: { id: "checklist-itens" } });
 }
