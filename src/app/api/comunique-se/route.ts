@@ -98,7 +98,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ comuniqueSe: resultado }, { status: 201 });
   } catch (error) {
     if (error instanceof CriacaoParcialError) {
-      return NextResponse.json({ error: error.message, id: error.id }, { status: 500 });
+      console.error("[POST /api/comunique-se]", error);
+      return NextResponse.json(
+        { error: "Erro ao processar o Comunique-se, tente novamente.", id: error.id },
+        { status: 500 },
+      );
     }
     console.error("[POST /api/comunique-se]", error);
     return NextResponse.json({ error: "Erro ao processar o Comunique-se, tente novamente." }, { status: 500 });

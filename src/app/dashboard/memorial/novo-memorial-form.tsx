@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Controller, useForm, type FieldErrors } from "react-hook-form";
 
 import type { Projeto } from "@/db/queries/projeto";
@@ -57,7 +56,6 @@ export function NovoMemorialForm({ projetos, onSuccess }: NovoMemorialFormProps)
   const [audio, setAudio] = useState<{ base64: string; mimeType: string } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const criar = useCriarMemorial();
-  const router = useRouter();
   const { register, handleSubmit, control } = useForm<FormValues>();
   const erroRef = useRef<HTMLParagraphElement>(null);
 
@@ -118,7 +116,6 @@ export function NovoMemorialForm({ projetos, onSuccess }: NovoMemorialFormProps)
       onError: (error) => {
         if (error instanceof CriacaoParcialError) {
           onSuccess();
-          router.push(`/dashboard/memorial/${error.id}`);
           return;
         }
         setErro(error.message);

@@ -82,7 +82,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ memorial: resultado }, { status: 201 });
   } catch (error) {
     if (error instanceof CriacaoParcialError) {
-      return NextResponse.json({ error: error.message, id: error.id }, { status: 500 });
+      console.error("[POST /api/memoriais]", error);
+      return NextResponse.json(
+        { error: "Erro ao gerar o memorial, tente novamente.", id: error.id },
+        { status: 500 },
+      );
     }
     console.error("[POST /api/memoriais]", error);
     return NextResponse.json({ error: "Erro ao gerar o memorial, tente novamente." }, { status: 500 });
