@@ -9,6 +9,7 @@ import { criarMemorialSchema } from "@/lib/validations/memorial/create.schema";
 import type { MemorialResponse } from "@/lib/validations/memorial/response.schema";
 import type { PaginatedResponse } from "@/lib/pagination";
 import { gerarMemorial } from "@/lib/memorial/gerar";
+import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
@@ -80,6 +81,9 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json({ memorial: resultado }, { status: 201 });
   } catch (error) {
+    if (error instanceof CriacaoParcialError) {
+      return NextResponse.json({ error: error.message, id: error.id }, { status: 500 });
+    }
     console.error("[POST /api/memoriais]", error);
     return NextResponse.json({ error: "Erro ao gerar o memorial, tente novamente." }, { status: 500 });
   }

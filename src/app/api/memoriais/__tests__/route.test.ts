@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { empresa, memorialDescritivo, projeto, usuario } from "@/db/schema";
 import { assinarToken } from "@/lib/auth/jwt";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
+import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 
 vi.mock("@/lib/memorial/gerar", () => ({
   gerarMemorial: vi.fn(),
@@ -139,6 +140,19 @@ describe("POST /api/memoriais", () => {
     );
 
     expect(response.status).toBe(500);
+  });
+
+  it("retorna 500 com o id da linha quando gerarMemorial lança CriacaoParcialError", async () => {
+    const { token, projetoId } = await criarSessaoComProjeto();
+    vi.mocked(gerarMemorial).mockRejectedValue(new CriacaoParcialError("falhou", "memorial-123"));
+
+    const response = await POST(
+      criarRequest({ projetoId, tipoConstrucao: "residencial", modoEspecificacoes: "texto" }, token),
+    );
+
+    expect(response.status).toBe(500);
+    const corpo = await response.json();
+    expect(corpo.id).toBe("memorial-123");
   });
 });
 
