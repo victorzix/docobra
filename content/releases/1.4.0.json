@@ -1,0 +1,131 @@
+{
+  "releasedAt": "2026-08-20T20:00:00Z",
+  "title": {
+    "en": "Dashboard redesign and a more resilient Memorial module",
+    "pt": "Redesign do dashboard e Memorial mais resiliente",
+    "es": "Rediseño del dashboard y Memorial más resiliente"
+  },
+  "changes": [
+    {
+      "type": "added",
+      "text": {
+        "en": "A full visual redesign of the dashboard: a new brand identity (blueprint blue for planning, site-orange for construction), an animated active-tab indicator in the sidebar, and a refreshed home screen",
+        "pt": "Redesign visual completo do dashboard: nova identidade de marca (azul de prancheta pro planejamento, laranja de obra pra execução), indicador de aba ativa animado na sidebar, e uma home renovada",
+        "es": "Rediseño visual completo del dashboard: nueva identidad de marca (azul de plano para la planificación, naranja de obra para la ejecución), indicador de pestaña activa animado en la barra lateral, y una home renovada"
+      },
+      "image": {
+        "url": "https://res.cloudinary.com/avedkz6b/image/upload/v1787317553/01-dashboard-home.png",
+        "frame": "browser",
+        "browserUrl": "docobra.app",
+        "alt": {
+          "en": "Redesigned dashboard home screen with the new brand identity",
+          "pt": "Home do dashboard redesenhada com a nova identidade de marca",
+          "es": "Home del dashboard rediseñada con la nueva identidad de marca"
+        }
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "Projetos listing redesigned with cursor-based pagination (\"Load more\") and clearer project cards",
+        "pt": "Listagem de Projetos redesenhada com paginação por cursor (\"Carregar mais\") e cards mais claros",
+        "es": "Listado de Proyectos rediseñado con paginación por cursor (\"Cargar más\") y tarjetas más claras"
+      },
+      "image": {
+        "url": "https://res.cloudinary.com/avedkz6b/image/upload/v1787317553/02-projetos-listagem.png",
+        "frame": "browser",
+        "browserUrl": "docobra.app",
+        "alt": {
+          "en": "Redesigned Projetos listing with project cards",
+          "pt": "Listagem de Projetos redesenhada com cards de projeto",
+          "es": "Listado de Proyectos rediseñado con tarjetas de proyecto"
+        }
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "Memorial Descritivo creation moved from a full page to a slide-in drawer, with a searchable project combobox instead of a plain dropdown",
+        "pt": "Cadastro do Memorial Descritivo migrado de uma página inteira pra um drawer lateral, com combobox de projeto pesquisável no lugar do select simples",
+        "es": "La creación del Memorial Descriptivo pasó de una página completa a un panel lateral, con un combobox de proyecto con búsqueda en vez de un select simple"
+      },
+      "image": {
+        "url": "https://res.cloudinary.com/avedkz6b/image/upload/v1787316211/05-memorial-drawer-preenchido.png",
+        "frame": "browser",
+        "browserUrl": "docobra.app",
+        "alt": {
+          "en": "Memorial Descritivo drawer with project, construction type, and dimensions filled in",
+          "pt": "Drawer do Memorial Descritivo com projeto, tipo de construção e dimensões preenchidos",
+          "es": "Panel del Memorial Descriptivo con proyecto, tipo de construcción y dimensiones completados"
+        }
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "The dashboard — including the new Memorial creation drawer — is fully responsive down to mobile, with the sidebar collapsing into a slide-in menu",
+        "pt": "O dashboard — incluindo o novo drawer de cadastro do Memorial — é totalmente responsivo até o mobile, com a sidebar virando um menu deslizante",
+        "es": "El dashboard — incluyendo el nuevo panel de creación del Memorial — es totalmente responsivo hasta el móvil, con la barra lateral convirtiéndose en un menú deslizante"
+      },
+      "image": {
+        "url": "https://res.cloudinary.com/avedkz6b/image/upload/v1787317375/14-memorial-drawer-mobile.png",
+        "frame": "iphone",
+        "alt": {
+          "en": "Memorial creation drawer open on mobile, as a slide-in bottom sheet",
+          "pt": "Drawer de cadastro do Memorial aberto no mobile, como um painel deslizante de baixo",
+          "es": "Panel de creación del Memorial abierto en móvil, como un panel deslizante desde abajo"
+        }
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "Friendly reference numbers (PRJ-0001, MD-0001, CS-0001) everywhere a project, memorial, or Comunique-se is shown — including the generated PDF header — replacing raw UUIDs",
+        "pt": "Referências amigáveis (PRJ-0001, MD-0001, CS-0001) em todo lugar que um projeto, memorial ou Comunique-se aparece — inclusive no cabeçalho do PDF gerado — no lugar do UUID cru",
+        "es": "Referencias amigables (PRJ-0001, MD-0001, CS-0001) en todos los lugares donde aparece un proyecto, memorial o Comunique-se — incluido el encabezado del PDF generado — en lugar del UUID crudo"
+      },
+      "image": {
+        "url": "https://res.cloudinary.com/avedkz6b/image/upload/v1787316210/06-memorial-listagem.png",
+        "frame": "browser",
+        "browserUrl": "docobra.app",
+        "alt": {
+          "en": "Memorial Descritivo listing showing friendly reference numbers like MD-0005",
+          "pt": "Listagem de Memorial Descritivo com referências amigáveis como MD-0005",
+          "es": "Listado de Memorial Descriptivo con referencias amigables como MD-0005"
+        }
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "Memorial listing now updates live (React Query), and any memorial that failed to generate can be retried with one click — no need to redo the form or re-record audio",
+        "pt": "Listagem de memoriais agora atualiza sozinha (React Query), e qualquer memorial que falhou na geração pode ser retomado com um clique — sem refazer o formulário ou regravar o áudio",
+        "es": "El listado de memoriales ahora se actualiza solo (React Query), y cualquier memorial que falló en la generación puede reintentarse con un clic — sin rehacer el formulario ni regrabar el audio"
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "Live draft captions while recording audio for the Memorial form, so you can see roughly what's being picked up as you speak",
+        "pt": "Legenda ao vivo (rascunho) durante a gravação de áudio no formulário de Memorial, pra acompanhar mais ou menos o que está sendo captado enquanto você fala",
+        "es": "Subtítulos en vivo (borrador) durante la grabación de audio en el formulario de Memorial, para ver más o menos lo que se está captando mientras hablas"
+      }
+    },
+    {
+      "type": "fixed",
+      "text": {
+        "en": "Switching tabs in the sidebar now shows a loading skeleton instead of leaving the previous screen frozen with no feedback while the next page loads",
+        "pt": "Trocar de aba na sidebar agora mostra um esqueleto de carregamento em vez de deixar a tela anterior travada sem feedback enquanto a próxima página carrega",
+        "es": "Cambiar de pestaña en la barra lateral ahora muestra un esqueleto de carga en vez de dejar la pantalla anterior congelada sin feedback mientras carga la siguiente página"
+      }
+    },
+    {
+      "type": "fixed",
+      "text": {
+        "en": "The project's raw UUID no longer leaks into the AI prompt used to generate the Memorial's prose (it could occasionally be echoed back into the generated text)",
+        "pt": "O UUID cru do projeto não vaza mais no prompt de IA usado pra gerar a prosa do Memorial (podia, raramente, ser ecoado de volta no texto gerado)",
+        "es": "El UUID crudo del proyecto ya no se filtra en el prompt de IA usado para generar la prosa del Memorial (podía, raramente, aparecer reflejado en el texto generado)"
+      }
+    }
+  ]
+}
