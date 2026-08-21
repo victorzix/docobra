@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+import { arrayBufferParaBase64 } from "@/lib/browser/arraybuffer-para-base64";
 import type { Projeto } from "@/db/queries/projeto";
 import { criarComuniqueSeSchema } from "@/lib/validations/comunique-se/create.schema";
 import { useCriarComuniqueSe } from "@/hooks/use-criar-comunique-se";
@@ -21,15 +22,6 @@ interface FormValues {
 interface NovoComuniqueSeFormProps {
   projetos: Projeto[];
   onSuccess: () => void;
-}
-
-function arrayBufferParaBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binario = "";
-  for (const byte of bytes) {
-    binario += String.fromCharCode(byte);
-  }
-  return btoa(binario);
 }
 
 export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeFormProps) {
@@ -83,7 +75,7 @@ export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeForm
         return;
       }
 
-      const pdfBase64 = arrayBufferParaBase64(await arquivo.arrayBuffer());
+      const pdfBase64 = await arrayBufferParaBase64(await arquivo.arrayBuffer());
       const payload = { modoCriacao: "pdf" as const, projetoId: values.projetoId, pdfBase64 };
 
       const parsed = criarComuniqueSeSchema.safeParse(payload);

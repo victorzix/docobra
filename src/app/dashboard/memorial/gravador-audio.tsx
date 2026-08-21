@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Mic, Pause, Play, Square } from "lucide-react";
 
+import { arrayBufferParaBase64 } from "@/lib/browser/arraybuffer-para-base64";
+
 interface GravadorAudioProps {
   onGravado: (audioBase64: string, mimeType: string) => void;
 }
@@ -36,15 +38,6 @@ declare global {
 function obterConstrutorReconhecimento() {
   if (typeof window === "undefined") return undefined;
   return window.SpeechRecognition ?? window.webkitSpeechRecognition;
-}
-
-function arrayBufferParaBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binario = "";
-  for (const byte of bytes) {
-    binario += String.fromCharCode(byte);
-  }
-  return btoa(binario);
 }
 
 export function GravadorAudio({ onGravado }: GravadorAudioProps) {
@@ -80,7 +73,7 @@ export function GravadorAudio({ onGravado }: GravadorAudioProps) {
       const blob = new Blob(chunksRef.current, { type: mimeType });
       setUrlPreview(URL.createObjectURL(blob));
       const buffer = await blob.arrayBuffer();
-      onGravado(arrayBufferParaBase64(buffer), mimeType);
+      onGravado(await arrayBufferParaBase64(buffer), mimeType);
       stream.getTracks().forEach((track) => track.stop());
     };
 
