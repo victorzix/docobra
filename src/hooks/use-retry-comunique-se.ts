@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 
 interface RetryResponse {
-  comuniqueSe: { id: string; numero: number; status: string; pdfOriginalUrl: string };
+  comuniqueSe: { id: string; numero: number; status: string; pdfOriginalUrl: string | null };
 }
 
 interface ApiErrorBody {

@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import type { CriarComuniqueSeInput } from "@/lib/validations/comunique-se/create.schema";
 
 interface ComuniqueSeCriadoResponse {
-  comuniqueSe: { id: string; numero: number; status: string; pdfOriginalUrl: string };
+  comuniqueSe: { id: string; numero: number; status: string; pdfOriginalUrl: string | null };
 }
 
 interface ApiErrorBody {

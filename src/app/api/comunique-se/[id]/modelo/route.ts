@@ -28,11 +28,21 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // e pertence a essa empresa — não pode retornar null aqui.
   const projetoEncontrado = await buscarProjetoDaEmpresa(comuniqueSeEncontrado.projetoId, sessao.empresaId);
 
-  const pdf = await gerarModeloExportado({
-    referencia: referenciaComuniqueSe(comuniqueSeEncontrado.numero),
-    projetoNome: projetoEncontrado!.nome,
-    itens: comuniqueSeEncontrado.checklistJson.itens,
-  });
+  try {
+    const pdf = await gerarModeloExportado({
+      referencia: referenciaComuniqueSe(comuniqueSeEncontrado.numero),
+      projetoNome: projetoEncontrado!.nome,
+      itens: comuniqueSeEncontrado.checklistJson.itens,
+    });
 
-  return new NextResponse(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf" } });
+    return new NextResponse(new Uint8Array(pdf), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="modelo-${referenciaComuniqueSe(comuniqueSeEncontrado.numero)}.pdf"`,
+      },
+    });
+  } catch (error) {
+    console.error("[GET /api/comunique-se/[id]/modelo]", error);
+    return NextResponse.json({ error: "Erro ao gerar o modelo, tente novamente." }, { status: 500 });
+  }
 }

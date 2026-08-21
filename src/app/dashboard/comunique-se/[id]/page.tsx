@@ -34,7 +34,7 @@ export default async function ComuniqueSeDetalhePage({ params }: { params: Promi
             </a>
           )}
           {comuniqueSeEncontrado.status === "pronto" && (
-            <a href={`/api/comunique-se/${comuniqueSeEncontrado.id}/modelo`} className="text-sm underline">
+            <a href={`/api/comunique-se/${comuniqueSeEncontrado.id}/modelo`} download className="text-sm underline">
               Baixar modelo
             </a>
           )}
