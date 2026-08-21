@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 
 import { arrayBufferParaBase64 } from "@/lib/browser/arraybuffer-para-base64";
+import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 import type { Projeto } from "@/db/queries/projeto";
 import { criarComuniqueSeSchema } from "@/lib/validations/comunique-se/create.schema";
 import { useCriarComuniqueSe } from "@/hooks/use-criar-comunique-se";
@@ -30,6 +32,7 @@ export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeForm
   const [itensDigitados, setItensDigitados] = useState<string[]>([""]);
   const [erro, setErro] = useState<string | null>(null);
   const criar = useCriarComuniqueSe();
+  const router = useRouter();
   const { handleSubmit, control } = useForm<FormValues>();
 
   function handleArquivoSelecionado(event: React.ChangeEvent<HTMLInputElement>) {
@@ -86,7 +89,14 @@ export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeForm
 
       criar.mutate(parsed.data, {
         onSuccess: () => onSuccess(),
-        onError: (error) => setErro(error.message),
+        onError: (error) => {
+          if (error instanceof CriacaoParcialError) {
+            onSuccess();
+            router.push(`/dashboard/comunique-se/${error.id}`);
+            return;
+          }
+          setErro(error.message);
+        },
       });
       return;
     }
@@ -106,7 +116,14 @@ export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeForm
 
     criar.mutate(parsed.data, {
       onSuccess: () => onSuccess(),
-      onError: (error) => setErro(error.message),
+      onError: (error) => {
+        if (error instanceof CriacaoParcialError) {
+          onSuccess();
+          router.push(`/dashboard/comunique-se/${error.id}`);
+          return;
+        }
+        setErro(error.message);
+      },
     });
   }
 
