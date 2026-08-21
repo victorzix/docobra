@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 
 import type { CriarComuniqueSeInput } from "@/lib/validations/comunique-se/create.schema";
+import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 
 interface ComuniqueSeCriadoResponse {
   comuniqueSe: { id: string; numero: number; status: string; pdfOriginalUrl: string | null };
@@ -9,6 +10,7 @@ interface ComuniqueSeCriadoResponse {
 interface ApiErrorBody {
   error: string;
   fields?: Record<string, string[]>;
+  id?: string;
 }
 
 async function criarComuniqueSeRequest(input: CriarComuniqueSeInput): Promise<ComuniqueSeCriadoResponse> {
@@ -21,7 +23,11 @@ async function criarComuniqueSeRequest(input: CriarComuniqueSeInput): Promise<Co
   const data = (await response.json()) as ComuniqueSeCriadoResponse | ApiErrorBody;
 
   if (!response.ok) {
-    throw new Error((data as ApiErrorBody).error);
+    const erro = data as ApiErrorBody;
+    if (erro.id) {
+      throw new CriacaoParcialError(erro.error, erro.id);
+    }
+    throw new Error(erro.error);
   }
 
   return data as ComuniqueSeCriadoResponse;

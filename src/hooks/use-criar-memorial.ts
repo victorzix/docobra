@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 
 import type { CriarMemorialInput } from "@/lib/validations/memorial/create.schema";
+import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 
 interface MemorialResponse {
   memorial: { id: string; status: string; documentoGeradoUrl: string | null };
@@ -9,6 +10,7 @@ interface MemorialResponse {
 interface ApiErrorBody {
   error: string;
   fields?: Record<string, string[]>;
+  id?: string;
 }
 
 async function criarMemorialRequest(input: CriarMemorialInput): Promise<MemorialResponse> {
@@ -21,7 +23,11 @@ async function criarMemorialRequest(input: CriarMemorialInput): Promise<Memorial
   const data = (await response.json()) as MemorialResponse | ApiErrorBody;
 
   if (!response.ok) {
-    throw new Error((data as ApiErrorBody).error);
+    const erro = data as ApiErrorBody;
+    if (erro.id) {
+      throw new CriacaoParcialError(erro.error, erro.id);
+    }
+    throw new Error(erro.error);
   }
 
   return data as MemorialResponse;
