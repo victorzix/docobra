@@ -27,6 +27,7 @@ export function ChecklistItens({ comuniqueSeId, itensIniciais }: ChecklistItensP
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [textoEdicao, setTextoEdicao] = useState("");
   const [novoItemTexto, setNovoItemTexto] = useState("");
+  const [erroAdicionar, setErroAdicionar] = useState<string | null>(null);
   const alternar = useAlternarItemChecklist();
   const adicionar = useAdicionarItemChecklist();
   const remover = useRemoverItemChecklist();
@@ -72,13 +73,21 @@ export function ChecklistItens({ comuniqueSeId, itensIniciais }: ChecklistItensP
   }
 
   function handleRemover(itemId: string) {
-    const itensAntes = itens;
+    const itemRemovido = itens.find((item) => item.id === itemId);
+    const indiceOriginal = itens.findIndex((item) => item.id === itemId);
     setItens((atual) => atual.filter((item) => item.id !== itemId));
 
     remover.mutate(
       { comuniqueSeId, itemId },
       {
-        onError: () => setItens(itensAntes),
+        onError: () => {
+          if (!itemRemovido) return;
+          setItens((atual) => {
+            const copia = [...atual];
+            copia.splice(indiceOriginal, 0, itemRemovido);
+            return copia;
+          });
+        },
       },
     );
   }
@@ -88,11 +97,16 @@ export function ChecklistItens({ comuniqueSeId, itensIniciais }: ChecklistItensP
     if (!descricao) return;
 
     setNovoItemTexto("");
+    setErroAdicionar(null);
 
     adicionar.mutate(
       { comuniqueSeId, descricao },
       {
         onSuccess: (itensAtualizados) => setItens(itensAtualizados),
+        onError: (error) => {
+          setNovoItemTexto(descricao);
+          setErroAdicionar(error.message);
+        },
       },
     );
   }
@@ -161,6 +175,7 @@ export function ChecklistItens({ comuniqueSeId, itensIniciais }: ChecklistItensP
           + Adicionar
         </Button>
       </div>
+      {erroAdicionar && <p className="text-xs text-destructive">{erroAdicionar}</p>}
     </div>
   );
 }
