@@ -16,6 +16,7 @@ import { comuniqueSeRouter } from "@/core/llm";
 import { criarComuniqueSeManual, processarComuniqueSe, reprocessarComuniqueSe } from "../processar";
 import { lerArquivo, salvarArquivo } from "../storage";
 import { gerarModeloExportado } from "@/lib/comunique-se/modelo-exportar";
+import { extrairTextoPdf } from "../extrair-texto";
 
 const DIR_STORAGE = path.join(process.cwd(), process.env.COMUNIQUE_SE_STORAGE_DIR ?? "storage/comunique-se");
 
@@ -144,6 +145,33 @@ describe("processarComuniqueSe", () => {
     expect(linha.checklistJson).toMatchObject({
       itens: [{ descricao: "Apresentar ART", concluida: true }],
     });
+  });
+
+  it("trunca o texto extraído em 100.000 caracteres antes de mandar pra IA", async () => {
+    const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
+    // Uma única "palavra" gigante sem espaço não quebra linha nem gera páginas
+    // extras no PDF (Chromium não pagina uma string ininterrupta) — usar
+    // palavras separadas por espaço garante o texto grande de verdade, com
+    // múltiplas páginas, que o teste precisa.
+    const pdf = await gerarPdfDeTeste(`<p>${"palavra ".repeat(20_000)}</p>`);
+    const textoCompleto = await extrairTextoPdf(pdf);
+    expect(textoCompleto.length).toBeGreaterThan(100_000);
+
+    vi.mocked(comuniqueSeRouter.extractStructured).mockResolvedValue({
+      data: { itens: [{ descricao: "Item" }] },
+      provider: "fake",
+      raw: {},
+    });
+
+    await processarComuniqueSe({
+      projetoId: novoProjeto.id,
+      empresaId: novaEmpresa.id,
+      pdfBuffer: pdf,
+    });
+
+    const chamada = vi.mocked(comuniqueSeRouter.extractStructured).mock.calls[0][0];
+    expect(chamada.userPrompt.length).toBe(100_000);
+    expect(chamada.userPrompt).toBe(textoCompleto.slice(0, 100_000));
   });
 });
 

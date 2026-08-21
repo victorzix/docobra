@@ -29,12 +29,15 @@ const SCHEMA_CHECKLIST = {
 
 type ResultadoProcessamento = { id: string; numero: number; status: string; pdfOriginalUrl: string | null };
 
+const LIMITE_CARACTERES_TEXTO_PDF = 100_000;
+
 async function finalizarProcessamento(id: string, pdfBuffer: Buffer): Promise<{ status: string }> {
   try {
-    const texto = await extrairTextoPdf(pdfBuffer);
-    if (!texto) {
+    const textoBruto = await extrairTextoPdf(pdfBuffer);
+    if (!textoBruto) {
       throw new Error("PDF sem texto extraível.");
     }
+    const texto = textoBruto.slice(0, LIMITE_CARACTERES_TEXTO_PDF);
 
     const resultado = await comuniqueSeRouter.extractStructured<{ itens: { descricao: string }[] }>({
       systemPrompt:
