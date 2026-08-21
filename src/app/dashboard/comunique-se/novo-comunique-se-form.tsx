@@ -9,6 +9,7 @@ import { useCriarComuniqueSe } from "@/hooks/use-criar-comunique-se";
 import { ProjetoCombobox } from "@/components/common/projeto-combobox";
 import { LoadingSpinner } from "@/components/common/loading-spinner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const TAMANHO_MAXIMO_PDF_BYTES = 10 * 1024 * 1024;
@@ -32,7 +33,9 @@ function arrayBufferParaBase64(buffer: ArrayBuffer): string {
 }
 
 export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeFormProps) {
+  const [modo, setModo] = useState<"pdf" | "manual">("pdf");
   const [arquivo, setArquivo] = useState<File | null>(null);
+  const [itensDigitados, setItensDigitados] = useState<string[]>([""]);
   const [erro, setErro] = useState<string | null>(null);
   const criar = useCriarComuniqueSe();
   const { handleSubmit, control } = useForm<FormValues>();
@@ -59,20 +62,53 @@ export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeForm
     setArquivo(selecionado);
   }
 
+  function handleItemDigitadoChange(indice: number, valor: string) {
+    setItensDigitados((atual) => atual.map((item, i) => (i === indice ? valor : item)));
+  }
+
+  function handleAdicionarLinha() {
+    setItensDigitados((atual) => [...atual, ""]);
+  }
+
+  function handleRemoverLinha(indice: number) {
+    setItensDigitados((atual) => (atual.length === 1 ? atual : atual.filter((_, i) => i !== indice)));
+  }
+
   async function onSubmit(values: FormValues) {
     setErro(null);
 
-    if (!arquivo) {
-      setErro("Selecione um arquivo PDF.");
+    if (modo === "pdf") {
+      if (!arquivo) {
+        setErro("Selecione um arquivo PDF.");
+        return;
+      }
+
+      const pdfBase64 = arrayBufferParaBase64(await arquivo.arrayBuffer());
+      const payload = { modoCriacao: "pdf" as const, projetoId: values.projetoId, pdfBase64 };
+
+      const parsed = criarComuniqueSeSchema.safeParse(payload);
+      if (!parsed.success) {
+        setErro("Preencha os campos obrigatórios corretamente.");
+        return;
+      }
+
+      criar.mutate(parsed.data, {
+        onSuccess: () => onSuccess(),
+        onError: (error) => setErro(error.message),
+      });
       return;
     }
 
-    const pdfBase64 = arrayBufferParaBase64(await arquivo.arrayBuffer());
-    const payload = { projetoId: values.projetoId, pdfBase64 };
+    const itensPreenchidos = itensDigitados.map((item) => item.trim()).filter((item) => item.length > 0);
+    const payload = {
+      modoCriacao: "manual" as const,
+      projetoId: values.projetoId,
+      itens: itensPreenchidos.map((descricao) => ({ descricao })),
+    };
 
     const parsed = criarComuniqueSeSchema.safeParse(payload);
     if (!parsed.success) {
-      setErro("Preencha os campos obrigatórios corretamente.");
+      setErro("Adicione pelo menos um item.");
       return;
     }
 
@@ -106,16 +142,57 @@ export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeForm
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="pdf">Arquivo do Comunique-se (PDF)</Label>
-        <input
-          id="pdf"
-          type="file"
-          accept="application/pdf"
-          onChange={handleArquivoSelecionado}
-          className="rounded-md border border-input p-2 text-sm"
-        />
-        {arquivo && <p className="text-xs text-muted-foreground">{arquivo.name}</p>}
+        <Label>Como criar</Label>
+        <div className="flex gap-2">
+          <Button type="button" variant={modo === "pdf" ? "default" : "outline"} onClick={() => setModo("pdf")}>
+            Enviar PDF
+          </Button>
+          <Button type="button" variant={modo === "manual" ? "default" : "outline"} onClick={() => setModo("manual")}>
+            Digitar exigências
+          </Button>
+        </div>
       </div>
+
+      {modo === "pdf" ? (
+        <div className="grid gap-2">
+          <Label htmlFor="pdf">Arquivo do Comunique-se (PDF)</Label>
+          <input
+            id="pdf"
+            type="file"
+            accept="application/pdf"
+            onChange={handleArquivoSelecionado}
+            className="rounded-md border border-input p-2 text-sm"
+          />
+          {arquivo && <p className="text-xs text-muted-foreground">{arquivo.name}</p>}
+        </div>
+      ) : (
+        <div className="grid gap-2">
+          <Label>Exigências</Label>
+          <div className="grid gap-2">
+            {itensDigitados.map((item, indice) => (
+              <div key={indice} className="flex gap-2">
+                <Input
+                  value={item}
+                  onChange={(event) => handleItemDigitadoChange(indice, event.target.value)}
+                  placeholder="Descreva a exigência"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRemoverLinha(indice)}
+                  disabled={itensDigitados.length === 1}
+                >
+                  Remover
+                </Button>
+              </div>
+            ))}
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={handleAdicionarLinha}>
+            + Adicionar item
+          </Button>
+        </div>
+      )}
 
       {erro && <p className="text-destructive text-sm">{erro}</p>}
       <Button type="submit" disabled={criar.isPending}>
