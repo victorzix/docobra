@@ -83,6 +83,33 @@ describe("DELETE /api/comunique-se/[id]/itens/[itemId]", () => {
     expect(response.status).toBe(404);
   });
 
+  it("retorna 404 pra Comunique-se de outra empresa", async () => {
+    const [empresaA] = await db.insert(empresa).values({ nome: "Empresa A" }).returning();
+    const [empresaB] = await db.insert(empresa).values({ nome: "Empresa B" }).returning();
+    const [usuarioB] = await db
+      .insert(usuario)
+      .values({ nome: "B", email: "b@ancar.com.br", senhaHash: "hash-fake", empresaId: empresaB.id })
+      .returning();
+    const [projetoA] = await db.insert(projeto).values({ nome: "Projeto A", empresaId: empresaA.id }).returning();
+    const [linhaA] = await db
+      .insert(comuniqueSe)
+      .values({
+        projetoId: projetoA.id,
+        numero: 1,
+        status: "pronto",
+        pdfOriginalUrl: "/x",
+        checklistJson: { itens: [{ id: "item-1", descricao: "Apresentar ART", concluida: false }] },
+      })
+      .returning();
+    const tokenB = await assinarToken({ userId: usuarioB.id, empresaId: empresaB.id, papel: usuarioB.papel });
+
+    const response = await DELETE(criarRequest(tokenB), {
+      params: Promise.resolve({ id: linhaA.id, itemId: "item-1" }),
+    });
+
+    expect(response.status).toBe(404);
+  });
+
   it("retorna 404 pra itemId inexistente", async () => {
     const { token, comuniqueSeId } = await criarSessaoComChecklist();
 
