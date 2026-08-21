@@ -13,8 +13,9 @@ vi.mock("@/core/llm", () => ({
 }));
 
 import { comuniqueSeRouter } from "@/core/llm";
-import { processarComuniqueSe, reprocessarComuniqueSe } from "../processar";
+import { criarComuniqueSeManual, processarComuniqueSe, reprocessarComuniqueSe } from "../processar";
 import { lerArquivo, salvarArquivo } from "../storage";
+import { gerarModeloExportado } from "@/lib/comunique-se/modelo-exportar";
 
 const DIR_STORAGE = path.join(process.cwd(), process.env.COMUNIQUE_SE_STORAGE_DIR ?? "storage/comunique-se");
 
@@ -121,6 +122,29 @@ describe("processarComuniqueSe", () => {
     const [linha] = await db.select().from(comuniqueSe);
     expect(linha.status).toBe("erro");
   });
+
+  it("detecta um modelo DocObra embutido (gerado por gerarModeloExportado) e pula a extração/IA", async () => {
+    const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
+    const pdfComModelo = await gerarModeloExportado({
+      referencia: "CS-0001",
+      projetoNome: "Casa da Praia",
+      itens: [{ id: "1", descricao: "Apresentar ART", concluida: true }],
+    });
+
+    const resultado = await processarComuniqueSe({
+      projetoId: novoProjeto.id,
+      empresaId: novaEmpresa.id,
+      pdfBuffer: pdfComModelo,
+    });
+
+    expect(resultado.status).toBe("pronto");
+    expect(comuniqueSeRouter.extractStructured).not.toHaveBeenCalled();
+
+    const [linha] = await db.select().from(comuniqueSe);
+    expect(linha.checklistJson).toMatchObject({
+      itens: [{ descricao: "Apresentar ART", concluida: true }],
+    });
+  });
 });
 
 describe("reprocessarComuniqueSe", () => {
@@ -156,5 +180,27 @@ describe("reprocessarComuniqueSe", () => {
     const resultado = await reprocessarComuniqueSe(linhaErro.id, linhaErro.numero, linhaErro.pdfOriginalUrl);
 
     expect(resultado.status).toBe("pronto");
+  });
+});
+
+describe("criarComuniqueSeManual", () => {
+  afterEach(limparBanco);
+
+  it("cria já pronto, sem PDF, com os itens informados", async () => {
+    const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
+
+    const resultado = await criarComuniqueSeManual({
+      projetoId: novoProjeto.id,
+      empresaId: novaEmpresa.id,
+      itens: [{ descricao: "Apresentar ART" }, { descricao: "Apresentar laudo de sondagem" }],
+    });
+
+    expect(resultado.status).toBe("pronto");
+    expect(resultado.pdfOriginalUrl).toBeNull();
+
+    const [linha] = await db.select().from(comuniqueSe);
+    expect(linha.checklistJson).toMatchObject({
+      itens: [{ descricao: "Apresentar ART", concluida: false }, { descricao: "Apresentar laudo de sondagem", concluida: false }],
+    });
   });
 });

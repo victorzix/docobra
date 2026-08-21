@@ -2,12 +2,14 @@ import { randomUUID } from "node:crypto";
 
 import { comuniqueSeRouter } from "@/core/llm";
 import {
+  criarComuniqueSePronto,
   criarComuniqueSeProcessando,
   marcarComoErro,
   marcarComoPronto,
   type ChecklistItem,
 } from "@/db/queries/comunique-se";
 import { extrairTextoPdf } from "./extrair-texto";
+import { detectarModeloEmbutido } from "./modelo-detectar";
 import { lerArquivo, salvarArquivo } from "./storage";
 
 const SCHEMA_CHECKLIST = {
@@ -25,7 +27,7 @@ const SCHEMA_CHECKLIST = {
   required: ["itens"],
 };
 
-type ResultadoProcessamento = { id: string; numero: number; status: string; pdfOriginalUrl: string };
+type ResultadoProcessamento = { id: string; numero: number; status: string; pdfOriginalUrl: string | null };
 
 async function finalizarProcessamento(id: string, pdfBuffer: Buffer): Promise<{ status: string }> {
   try {
@@ -72,15 +74,47 @@ export async function processarComuniqueSe(input: {
     pdfOriginalUrl,
   });
 
-  const resultado = await finalizarProcessamento(id, input.pdfBuffer);
+  const itensDetectados = await detectarModeloEmbutido(input.pdfBuffer);
+  if (itensDetectados) {
+    const itensComId: ChecklistItem[] = itensDetectados.map((item) => ({
+      id: randomUUID(),
+      descricao: item.descricao,
+      concluida: item.concluida,
+    }));
+    await marcarComoPronto(id, itensComId);
+    return { id, numero: criado.numero, status: "pronto", pdfOriginalUrl };
+  }
 
+  const resultado = await finalizarProcessamento(id, input.pdfBuffer);
   return { id, numero: criado.numero, status: resultado.status, pdfOriginalUrl };
+}
+
+export async function criarComuniqueSeManual(input: {
+  projetoId: string;
+  empresaId: string;
+  itens: { descricao: string }[];
+}): Promise<ResultadoProcessamento> {
+  const id = randomUUID();
+  const itensComId: ChecklistItem[] = input.itens.map((item) => ({
+    id: randomUUID(),
+    descricao: item.descricao,
+    concluida: false,
+  }));
+
+  const criado = await criarComuniqueSePronto({
+    id,
+    projetoId: input.projetoId,
+    empresaId: input.empresaId,
+    itens: itensComId,
+  });
+
+  return { id, numero: criado.numero, status: "pronto", pdfOriginalUrl: null };
 }
 
 export async function reprocessarComuniqueSe(
   id: string,
   numero: number,
-  pdfOriginalUrl: string,
+  pdfOriginalUrl: string | null,
 ): Promise<ResultadoProcessamento> {
   const pdfBuffer = await lerArquivo(`${id}.pdf`);
   const resultado = await finalizarProcessamento(id, pdfBuffer);
