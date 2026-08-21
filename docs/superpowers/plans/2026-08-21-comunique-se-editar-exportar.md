@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Migração de schema**: `pdfOriginalUrl` em `comunique_se` passa de `NOT NULL` pra nullable. Este projeto **não usa migrations versionadas** (não existe pasta `drizzle/` no repo) — aplica-se a mudança com `npm run db:push`, direto contra `DATABASE_URL` (dev) e contra o banco apontado por `.env.test` (`docobra-local-test`) antes de rodar os testes.
-- **`pdf-lib` já verificado nesta sessão**: `doc.attach(buffer, nome, opções)` funciona pela API pública. **Reler o anexo não tem API de alto nível na versão instalada** (`pdf-lib@1.17.1` não tem `getAttachments()`) — precisa navegar manualmente `catalog.lookupMaybe(PDFName.of("Names"), PDFDict)` → `.lookupMaybe(PDFName.of("EmbeddedFiles"), PDFDict)` → `.lookup(PDFName.of("Names"))` (um `PDFArray` intercalando nome/referência) → resolver a referência do `FileSpec` (`PDFDict`) → `.lookup(PDFName.of("EF"), PDFDict)` → `.get(PDFName.of("F"))` → resolver o stream → `decodePDFRawStream(stream).decode()`. **O nome do arquivo no array vem como `PDFHexString`, não `PDFString`** — usar `.decodeText()` (existe nos dois tipos), nunca `instanceof PDFString`. Round-trip completo (anexar → salvar → recarregar → reler, e também "PDF sem anexo retorna `null` sem lançar") foi confirmado batendo byte-a-byte nesta sessão — o código das Tasks 2 e 3 abaixo já reflete esse mecanismo verificado.
+- **`pdf-lib` já verificado nesta sessão**: `doc.attach(buffer, nome, opções)` funciona pela API pública. **Reler o anexo não tem API de alto nível na versão instalada** (`pdf-lib@1.17.1` não tem `getAttachments()`) — precisa navegar manualmente `catalog.lookupMaybe(PDFName.of("Names"), PDFDict)` → `.lookupMaybe(PDFName.of("EmbeddedFiles"), PDFDict)` → `.lookupMaybe(PDFName.of("Names"), PDFArray)` (um `PDFArray` intercalando nome/referência) → resolver a referência do `FileSpec` (`PDFDict`) → `.lookup(PDFName.of("EF"), PDFDict)` → `.get(PDFName.of("F"))` → resolver o stream via `.lookup(ref, PDFStream)` e fazer cast pra `PDFRawStream` → `decodePDFRawStream(stream).decode()`. **O nome do arquivo no array vem como `PDFHexString`, não `PDFString`** — usar `.decodeText()` (existe nos dois tipos, cast pra `PDFString | PDFHexString` antes de chamar), nunca `instanceof PDFString`. **`tsc --noEmit` exige as chamadas `.lookup`/`.lookupMaybe` com o segundo argumento de tipo** (`PDFDict`/`PDFArray`/`PDFStream`) — sem isso, `lookup()` sem tipo devolve `PDFObject` genérico, sem `.asArray()`/incompatível com `decodePDFRawStream` (confirmado batendo em dois lugares nesta mesma sessão: o teste da Task 2 e o código de produção da Task 3, ambos já corrigidos abaixo). Round-trip completo (anexar → salvar → recarregar → reler, e também "PDF sem anexo retorna `null` sem lançar") foi confirmado batendo byte-a-byte nesta sessão — o código das Tasks 2 e 3 abaixo já reflete esse mecanismo verificado, incluindo a tipagem correta.
 - **Puppeteer e `pdf-parse` já verificados** (specs anteriores) — sem necessidade de reverificar.
 - **Storage de teste já isolado**: `.env.test` já tem `COMUNIQUE_SE_STORAGE_DIR="storage/comunique-se-test"` — nenhuma mudança necessária ali.
 - **Mudança de assinatura que quebra chamadores existentes**: `atualizarItemChecklist(id, itemId, concluida: boolean)` na query layer vira `atualizarItemChecklist(id, itemId, patch: { concluida?: boolean; descricao?: string })`. Toda task que toca essa função precisa atualizar os dois testes existentes em `src/db/queries/__tests__/comunique-se.test.ts` (`atualizarItemChecklist` describe block) que chamam com o terceiro argumento posicional `true`.
@@ -263,7 +263,17 @@ Crie `src/lib/comunique-se/__tests__/modelo-exportar.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { PDFDocument, PDFName, PDFDict, decodePDFRawStream } from "pdf-lib";
+import {
+  PDFDocument,
+  PDFName,
+  PDFDict,
+  PDFArray,
+  PDFStream,
+  PDFString,
+  PDFHexString,
+  decodePDFRawStream,
+  type PDFRawStream,
+} from "pdf-lib";
 
 import { gerarModeloExportado } from "../modelo-exportar";
 import { FORMATO_MODELO_EXPORTADO, NOME_ARQUIVO_MODELO_EXPORTADO } from "@/lib/validations/comunique-se/modelo-exportado.schema";
@@ -274,15 +284,16 @@ async function lerAnexoDoPdf(pdfBuffer: Buffer): Promise<string | null> {
   if (!namesDict) return null;
   const efDict = namesDict.lookupMaybe(PDFName.of("EmbeddedFiles"), PDFDict);
   if (!efDict) return null;
-  const namesArray = efDict.lookup(PDFName.of("Names"));
+  const namesArray = efDict.lookupMaybe(PDFName.of("Names"), PDFArray);
   if (!namesArray) return null;
 
   const arr = namesArray.asArray();
   for (let i = 0; i < arr.length; i += 2) {
-    if (arr[i].decodeText() !== NOME_ARQUIVO_MODELO_EXPORTADO) continue;
+    const nome = arr[i] as PDFString | PDFHexString;
+    if (nome.decodeText() !== NOME_ARQUIVO_MODELO_EXPORTADO) continue;
     const fileSpec = doc.context.lookup(arr[i + 1], PDFDict);
     const efFileDict = fileSpec.lookup(PDFName.of("EF"), PDFDict);
-    const stream = doc.context.lookup(efFileDict.get(PDFName.of("F")));
+    const stream = doc.context.lookup(efFileDict.get(PDFName.of("F")), PDFStream) as PDFRawStream;
     return Buffer.from(decodePDFRawStream(stream).decode()).toString("utf8");
   }
   return null;
@@ -471,7 +482,17 @@ Expected: FAIL — `Cannot find module '../modelo-detectar'`.
 Crie `src/lib/comunique-se/modelo-detectar.ts`:
 
 ```ts
-import { PDFDocument, PDFName, PDFDict, decodePDFRawStream } from "pdf-lib";
+import {
+  PDFDocument,
+  PDFName,
+  PDFDict,
+  PDFArray,
+  PDFStream,
+  PDFString,
+  PDFHexString,
+  decodePDFRawStream,
+  type PDFRawStream,
+} from "pdf-lib";
 
 import { modeloExportadoSchema, NOME_ARQUIVO_MODELO_EXPORTADO } from "@/lib/validations/comunique-se/modelo-exportado.schema";
 
@@ -487,16 +508,17 @@ export async function detectarModeloEmbutido(
     const efDict = namesDict.lookupMaybe(PDFName.of("EmbeddedFiles"), PDFDict);
     if (!efDict) return null;
 
-    const namesArray = efDict.lookup(PDFName.of("Names"));
+    const namesArray = efDict.lookupMaybe(PDFName.of("Names"), PDFArray);
     if (!namesArray) return null;
 
     const arr = namesArray.asArray();
     for (let i = 0; i < arr.length; i += 2) {
-      if (arr[i].decodeText() !== NOME_ARQUIVO_MODELO_EXPORTADO) continue;
+      const nome = arr[i] as PDFString | PDFHexString;
+      if (nome.decodeText() !== NOME_ARQUIVO_MODELO_EXPORTADO) continue;
 
       const fileSpec = doc.context.lookup(arr[i + 1], PDFDict);
       const efFileDict = fileSpec.lookup(PDFName.of("EF"), PDFDict);
-      const stream = doc.context.lookup(efFileDict.get(PDFName.of("F")));
+      const stream = doc.context.lookup(efFileDict.get(PDFName.of("F")), PDFStream) as PDFRawStream;
       const conteudo = Buffer.from(decodePDFRawStream(stream).decode()).toString("utf8");
 
       const json = JSON.parse(conteudo);
