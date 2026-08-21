@@ -177,3 +177,19 @@ describe("atualizarItemChecklist", () => {
     expect(resultado).toBeNull();
   });
 });
+
+describe("pdfOriginalUrl nullable", () => {
+  beforeEach(limparBanco);
+  afterEach(limparBanco);
+
+  it("aceita inserir um Comunique-se sem pdfOriginalUrl (null)", async () => {
+    const { projeto: novoProjeto } = await criarProjetoDeTeste();
+
+    const [criado] = await db
+      .insert(comuniqueSe)
+      .values({ projetoId: novoProjeto.id, numero: 1, status: "pronto", pdfOriginalUrl: null })
+      .returning();
+
+    expect(criado.pdfOriginalUrl).toBeNull();
+  });
+});

@@ -19,7 +19,7 @@ export interface ComuniqueSe {
   numero: number;
   projetoId: string;
   status: string;
-  pdfOriginalUrl: string;
+  pdfOriginalUrl: string | null;
   checklistJson: ChecklistJson | null;
   createdAt: Date;
 }

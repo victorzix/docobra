@@ -5,7 +5,7 @@ export const comuniqueSeResponseSchema = z.object({
   numero: z.number(),
   projetoNome: z.string(),
   status: z.string(),
-  pdfOriginalUrl: z.string(),
+  pdfOriginalUrl: z.string().nullable(),
   createdAt: z.string(),
 });
 

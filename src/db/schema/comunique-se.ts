@@ -8,7 +8,7 @@ export const comuniqueSe = pgTable("comunique_se", {
   projetoId: uuid("projeto_id")
     .notNull()
     .references(() => projeto.id, { onDelete: "cascade" }),
-  pdfOriginalUrl: varchar("pdf_original_url", { length: 512 }).notNull(),
+  pdfOriginalUrl: varchar("pdf_original_url", { length: 512 }),
   checklistJson: jsonb("checklist_json"),
   status: varchar("status", { length: 50 }).notNull().default("processando"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
