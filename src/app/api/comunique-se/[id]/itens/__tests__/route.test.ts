@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { comuniqueSe, empresa, projeto, usuario } from "@/db/schema";
 import { assinarToken } from "@/lib/auth/jwt";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
-import { PATCH } from "@/app/api/comunique-se/[id]/itens/route";
+import { PATCH, POST } from "@/app/api/comunique-se/[id]/itens/route";
 
 async function limparBanco() {
   await db.delete(comuniqueSe);
@@ -127,5 +127,56 @@ describe("PATCH /api/comunique-se/[id]/itens", () => {
     expect(response.status).toBe(200);
     const corpo = await response.json();
     expect(corpo.itens).toEqual([{ id: itemId, descricao: "Apresentar ART", concluida: true }]);
+  });
+});
+
+describe("POST /api/comunique-se/[id]/itens", () => {
+  beforeEach(limparBanco);
+  afterEach(limparBanco);
+
+  it("rejeita sem sessão com 401", async () => {
+    const response = await POST(criarRequest({ descricao: "x" }), { params: Promise.resolve({ id: "x" }) });
+    expect(response.status).toBe(401);
+  });
+
+  it("rejeita corpo sem descricao com 400", async () => {
+    const { token, comuniqueSeId } = await criarSessaoComChecklist();
+
+    const response = await POST(criarRequest({}, token), { params: Promise.resolve({ id: comuniqueSeId }) });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("retorna 404 pra Comunique-se inexistente", async () => {
+    const { token } = await criarSessaoComChecklist();
+
+    const response = await POST(criarRequest({ descricao: "Novo item" }, token), {
+      params: Promise.resolve({ id: "00000000-0000-0000-0000-000000000000" }),
+    });
+
+    expect(response.status).toBe(404);
+  });
+
+  it("rejeita adicionar item quando o Comunique-se ainda não está pronto com 400", async () => {
+    const { token, comuniqueSeId } = await criarSessaoAindaProcessando();
+
+    const response = await POST(criarRequest({ descricao: "Novo item" }, token), {
+      params: Promise.resolve({ id: comuniqueSeId }),
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("adiciona o item e retorna a lista atualizada com 201", async () => {
+    const { token, comuniqueSeId } = await criarSessaoComChecklist();
+
+    const response = await POST(criarRequest({ descricao: "Novo item" }, token), {
+      params: Promise.resolve({ id: comuniqueSeId }),
+    });
+
+    expect(response.status).toBe(201);
+    const corpo = await response.json();
+    expect(corpo.itens).toHaveLength(2);
+    expect(corpo.itens[1].descricao).toBe("Novo item");
   });
 });
