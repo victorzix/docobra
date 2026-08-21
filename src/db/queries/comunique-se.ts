@@ -1,4 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 
 import { db } from "@/db";
 import { comuniqueSe, projeto } from "@/db/schema";
@@ -86,7 +87,7 @@ export async function marcarComoErro(id: string): Promise<void> {
 export async function atualizarItemChecklist(
   id: string,
   itemId: string,
-  concluida: boolean,
+  patch: { concluida?: boolean; descricao?: string },
 ): Promise<ChecklistItem[] | null> {
   const [linha] = await db
     .select({ checklistJson: comuniqueSe.checklistJson })
@@ -100,7 +101,7 @@ export async function atualizarItemChecklist(
   const indice = atual.itens.findIndex((item) => item.id === itemId);
   if (indice === -1) return null;
 
-  const itensAtualizados = atual.itens.map((item, i) => (i === indice ? { ...item, concluida } : item));
+  const itensAtualizados = atual.itens.map((item, i) => (i === indice ? { ...item, ...patch } : item));
 
   await db
     .update(comuniqueSe)
@@ -108,4 +109,68 @@ export async function atualizarItemChecklist(
     .where(eq(comuniqueSe.id, id));
 
   return itensAtualizados;
+}
+
+export async function adicionarItemChecklist(id: string, descricao: string): Promise<ChecklistItem[] | null> {
+  const [linha] = await db
+    .select({ checklistJson: comuniqueSe.checklistJson })
+    .from(comuniqueSe)
+    .where(eq(comuniqueSe.id, id))
+    .limit(1);
+
+  const atual = linha?.checklistJson as ChecklistJson | null | undefined;
+  if (!atual) return null;
+
+  const itensAtualizados = [...atual.itens, { id: randomUUID(), descricao, concluida: false }];
+
+  await db
+    .update(comuniqueSe)
+    .set({ checklistJson: { itens: itensAtualizados }, updatedAt: new Date() })
+    .where(eq(comuniqueSe.id, id));
+
+  return itensAtualizados;
+}
+
+export async function removerItemChecklist(id: string, itemId: string): Promise<ChecklistItem[] | null> {
+  const [linha] = await db
+    .select({ checklistJson: comuniqueSe.checklistJson })
+    .from(comuniqueSe)
+    .where(eq(comuniqueSe.id, id))
+    .limit(1);
+
+  const atual = linha?.checklistJson as ChecklistJson | null | undefined;
+  if (!atual) return null;
+
+  const existeItem = atual.itens.some((item) => item.id === itemId);
+  if (!existeItem) return null;
+
+  const itensAtualizados = atual.itens.filter((item) => item.id !== itemId);
+
+  await db
+    .update(comuniqueSe)
+    .set({ checklistJson: { itens: itensAtualizados }, updatedAt: new Date() })
+    .where(eq(comuniqueSe.id, id));
+
+  return itensAtualizados;
+}
+
+export async function criarComuniqueSePronto(input: {
+  id: string;
+  projetoId: string;
+  empresaId: string;
+  itens: ChecklistItem[];
+}): Promise<ComuniqueSe> {
+  const numero = await proximoNumero(input.empresaId, "comunique_se");
+  const [criado] = await db
+    .insert(comuniqueSe)
+    .values({
+      id: input.id,
+      projetoId: input.projetoId,
+      numero,
+      pdfOriginalUrl: null,
+      status: "pronto",
+      checklistJson: { itens: input.itens },
+    })
+    .returning(CAMPOS_COMUNIQUE_SE);
+  return criado as ComuniqueSe;
 }

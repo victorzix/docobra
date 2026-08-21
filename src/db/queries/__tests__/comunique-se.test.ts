@@ -4,12 +4,15 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/db";
 import { comuniqueSe, empresa, projeto } from "@/db/schema";
 import {
+  adicionarItemChecklist,
   atualizarItemChecklist,
   buscarComuniqueSeDaEmpresa,
   criarComuniqueSeProcessando,
+  criarComuniqueSePronto,
   listarComuniqueSe,
   marcarComoErro,
   marcarComoPronto,
+  removerItemChecklist,
 } from "../comunique-se";
 
 async function limparBanco() {
@@ -151,7 +154,7 @@ describe("atualizarItemChecklist", () => {
     const itemId = randomUUID();
     await marcarComoPronto(id, [{ id: itemId, descricao: "Apresentar ART", concluida: false }]);
 
-    const resultado = await atualizarItemChecklist(id, itemId, true);
+    const resultado = await atualizarItemChecklist(id, itemId, { concluida: true });
 
     expect(resultado).toEqual([{ id: itemId, descricao: "Apresentar ART", concluida: true }]);
   });
@@ -162,7 +165,7 @@ describe("atualizarItemChecklist", () => {
     await criarComuniqueSeProcessando({ id, projetoId: novoProjeto.id, empresaId: novaEmpresa.id, pdfOriginalUrl: "/x" });
     await marcarComoPronto(id, [{ id: randomUUID(), descricao: "Apresentar ART", concluida: false }]);
 
-    const resultado = await atualizarItemChecklist(id, "item-inexistente", true);
+    const resultado = await atualizarItemChecklist(id, "item-inexistente", { concluida: true });
 
     expect(resultado).toBeNull();
   });
@@ -172,9 +175,116 @@ describe("atualizarItemChecklist", () => {
     const id = randomUUID();
     await criarComuniqueSeProcessando({ id, projetoId: novoProjeto.id, empresaId: novaEmpresa.id, pdfOriginalUrl: "/x" });
 
-    const resultado = await atualizarItemChecklist(id, "qualquer-id", true);
+    const resultado = await atualizarItemChecklist(id, "qualquer-id", { concluida: true });
 
     expect(resultado).toBeNull();
+  });
+});
+
+describe("atualizarItemChecklist com descricao", () => {
+  beforeEach(limparBanco);
+  afterEach(limparBanco);
+
+  it("edita só o texto, mantendo concluida como estava", async () => {
+    const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
+    const id = randomUUID();
+    await criarComuniqueSeProcessando({ id, projetoId: novoProjeto.id, empresaId: novaEmpresa.id, pdfOriginalUrl: "/x" });
+    const itemId = randomUUID();
+    await marcarComoPronto(id, [{ id: itemId, descricao: "Texto original", concluida: true }]);
+
+    const resultado = await atualizarItemChecklist(id, itemId, { descricao: "Texto corrigido" });
+
+    expect(resultado).toEqual([{ id: itemId, descricao: "Texto corrigido", concluida: true }]);
+  });
+});
+
+describe("adicionarItemChecklist", () => {
+  beforeEach(limparBanco);
+  afterEach(limparBanco);
+
+  it("adiciona um item novo no fim da lista", async () => {
+    const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
+    const id = randomUUID();
+    await criarComuniqueSeProcessando({ id, projetoId: novoProjeto.id, empresaId: novaEmpresa.id, pdfOriginalUrl: "/x" });
+    await marcarComoPronto(id, [{ id: randomUUID(), descricao: "Item 1", concluida: false }]);
+
+    const resultado = await adicionarItemChecklist(id, "Item 2");
+
+    expect(resultado).toHaveLength(2);
+    expect(resultado?.[1].descricao).toBe("Item 2");
+    expect(resultado?.[1].concluida).toBe(false);
+  });
+
+  it("retorna null quando o Comunique-se ainda não tem checklist", async () => {
+    const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
+    const id = randomUUID();
+    await criarComuniqueSeProcessando({ id, projetoId: novoProjeto.id, empresaId: novaEmpresa.id, pdfOriginalUrl: "/x" });
+
+    const resultado = await adicionarItemChecklist(id, "Item novo");
+
+    expect(resultado).toBeNull();
+  });
+});
+
+describe("removerItemChecklist", () => {
+  beforeEach(limparBanco);
+  afterEach(limparBanco);
+
+  it("remove o item pedido e mantém o resto", async () => {
+    const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
+    const id = randomUUID();
+    await criarComuniqueSeProcessando({ id, projetoId: novoProjeto.id, empresaId: novaEmpresa.id, pdfOriginalUrl: "/x" });
+    const itemId1 = randomUUID();
+    const itemId2 = randomUUID();
+    await marcarComoPronto(id, [
+      { id: itemId1, descricao: "Item 1", concluida: false },
+      { id: itemId2, descricao: "Item 2", concluida: false },
+    ]);
+
+    const resultado = await removerItemChecklist(id, itemId1);
+
+    expect(resultado).toEqual([{ id: itemId2, descricao: "Item 2", concluida: false }]);
+  });
+
+  it("permite esvaziar a lista removendo o último item", async () => {
+    const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
+    const id = randomUUID();
+    await criarComuniqueSeProcessando({ id, projetoId: novoProjeto.id, empresaId: novaEmpresa.id, pdfOriginalUrl: "/x" });
+    const itemId = randomUUID();
+    await marcarComoPronto(id, [{ id: itemId, descricao: "Único item", concluida: false }]);
+
+    const resultado = await removerItemChecklist(id, itemId);
+
+    expect(resultado).toEqual([]);
+  });
+
+  it("retorna null quando o itemId não existe", async () => {
+    const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
+    const id = randomUUID();
+    await criarComuniqueSeProcessando({ id, projetoId: novoProjeto.id, empresaId: novaEmpresa.id, pdfOriginalUrl: "/x" });
+    await marcarComoPronto(id, [{ id: randomUUID(), descricao: "Item 1", concluida: false }]);
+
+    const resultado = await removerItemChecklist(id, "item-inexistente");
+
+    expect(resultado).toBeNull();
+  });
+});
+
+describe("criarComuniqueSePronto", () => {
+  beforeEach(limparBanco);
+  afterEach(limparBanco);
+
+  it("cria já com status pronto, sem pdfOriginalUrl e com os itens informados", async () => {
+    const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
+    const id = randomUUID();
+    const itens = [{ id: randomUUID(), descricao: "Apresentar ART", concluida: false }];
+
+    const resultado = await criarComuniqueSePronto({ id, projetoId: novoProjeto.id, empresaId: novaEmpresa.id, itens });
+
+    expect(resultado.id).toBe(id);
+    expect(resultado.status).toBe("pronto");
+    expect(resultado.pdfOriginalUrl).toBeNull();
+    expect(resultado.checklistJson?.itens).toEqual(itens);
   });
 });
 
