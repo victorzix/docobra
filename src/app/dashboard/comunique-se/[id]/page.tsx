@@ -27,9 +27,18 @@ export default async function ComuniqueSeDetalhePage({ params }: { params: Promi
           {referenciaComuniqueSe(comuniqueSeEncontrado.numero)}
         </span>
         <h1 className="text-2xl font-semibold">Checklist do Comunique-se</h1>
-        <a href={comuniqueSeEncontrado.pdfOriginalUrl} className="text-sm underline">
-          Baixar PDF original
-        </a>
+        <div className="flex gap-3">
+          {comuniqueSeEncontrado.pdfOriginalUrl && (
+            <a href={comuniqueSeEncontrado.pdfOriginalUrl} className="text-sm underline">
+              Baixar PDF original
+            </a>
+          )}
+          {comuniqueSeEncontrado.status === "pronto" && (
+            <a href={`/api/comunique-se/${comuniqueSeEncontrado.id}/modelo`} className="text-sm underline">
+              Baixar modelo
+            </a>
+          )}
+        </div>
       </div>
 
       {comuniqueSeEncontrado.status === "processando" && (
