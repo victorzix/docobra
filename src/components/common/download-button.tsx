@@ -38,8 +38,10 @@ export function DownloadButton({ href, filename, label, loadingLabel }: Download
       const link = document.createElement("a");
       link.href = url;
       link.download = filename;
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch {
       setErro("Não foi possível baixar o arquivo.");
     } finally {
