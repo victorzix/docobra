@@ -8,9 +8,10 @@ import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 
 vi.mock("@/lib/comunique-se/processar", () => ({
   processarComuniqueSe: vi.fn(),
+  criarComuniqueSeManual: vi.fn(),
 }));
 
-import { processarComuniqueSe } from "@/lib/comunique-se/processar";
+import { criarComuniqueSeManual, processarComuniqueSe } from "@/lib/comunique-se/processar";
 import { GET, POST } from "@/app/api/comunique-se/route";
 
 async function limparBanco() {
@@ -57,6 +58,7 @@ describe("POST /api/comunique-se", () => {
   beforeEach(async () => {
     await limparBanco();
     vi.mocked(processarComuniqueSe).mockReset();
+    vi.mocked(criarComuniqueSeManual).mockReset();
   });
   afterEach(limparBanco);
 
@@ -78,7 +80,7 @@ describe("POST /api/comunique-se", () => {
 
     const response = await POST(
       criarRequestPost(
-        { projetoId: "00000000-0000-0000-0000-000000000000", pdfBase64: PDF_BASE64_FAKE },
+        { modoCriacao: "pdf", projetoId: "00000000-0000-0000-0000-000000000000", pdfBase64: PDF_BASE64_FAKE },
         token,
       ),
     );
@@ -90,7 +92,10 @@ describe("POST /api/comunique-se", () => {
     const { token, projetoId } = await criarSessaoComProjeto();
 
     const response = await POST(
-      criarRequestPost({ projetoId, pdfBase64: Buffer.from("não é pdf").toString("base64") }, token),
+      criarRequestPost(
+        { modoCriacao: "pdf", projetoId, pdfBase64: Buffer.from("não é pdf").toString("base64") },
+        token,
+      ),
     );
 
     expect(response.status).toBe(400);
@@ -102,7 +107,7 @@ describe("POST /api/comunique-se", () => {
     const bufferGrande = Buffer.concat([Buffer.from("%PDF-1.4"), Buffer.alloc(10 * 1024 * 1024)]);
 
     const response = await POST(
-      criarRequestPost({ projetoId, pdfBase64: bufferGrande.toString("base64") }, token),
+      criarRequestPost({ modoCriacao: "pdf", projetoId, pdfBase64: bufferGrande.toString("base64") }, token),
     );
 
     expect(response.status).toBe(400);
@@ -118,7 +123,9 @@ describe("POST /api/comunique-se", () => {
       pdfOriginalUrl: "/api/comunique-se/abc/pdf",
     });
 
-    const response = await POST(criarRequestPost({ projetoId, pdfBase64: PDF_BASE64_FAKE }, token));
+    const response = await POST(
+      criarRequestPost({ modoCriacao: "pdf", projetoId, pdfBase64: PDF_BASE64_FAKE }, token),
+    );
 
     expect(response.status).toBe(201);
     const corpo = await response.json();
@@ -129,9 +136,57 @@ describe("POST /api/comunique-se", () => {
     const { token, projetoId } = await criarSessaoComProjeto();
     vi.mocked(processarComuniqueSe).mockRejectedValue(new Error("falhou"));
 
-    const response = await POST(criarRequestPost({ projetoId, pdfBase64: PDF_BASE64_FAKE }, token));
+    const response = await POST(
+      criarRequestPost({ modoCriacao: "pdf", projetoId, pdfBase64: PDF_BASE64_FAKE }, token),
+    );
 
     expect(response.status).toBe(500);
+  });
+
+  it("modoCriacao manual: rejeita sem nenhum item com 400, sem chamar criarComuniqueSeManual", async () => {
+    const { token, projetoId } = await criarSessaoComProjeto();
+
+    const response = await POST(criarRequestPost({ modoCriacao: "manual", projetoId, itens: [] }, token));
+
+    expect(response.status).toBe(400);
+    expect(criarComuniqueSeManual).not.toHaveBeenCalled();
+  });
+
+  it("modoCriacao manual: chama criarComuniqueSeManual e retorna 201 no sucesso", async () => {
+    const { token, projetoId } = await criarSessaoComProjeto();
+    vi.mocked(criarComuniqueSeManual).mockResolvedValue({
+      id: "abc",
+      numero: 1,
+      status: "pronto",
+      pdfOriginalUrl: null,
+    });
+
+    const response = await POST(
+      criarRequestPost({ modoCriacao: "manual", projetoId, itens: [{ descricao: "Apresentar ART" }] }, token),
+    );
+
+    expect(response.status).toBe(201);
+    const corpo = await response.json();
+    expect(corpo.comuniqueSe.status).toBe("pronto");
+    expect(corpo.comuniqueSe.pdfOriginalUrl).toBeNull();
+  });
+
+  it("modoCriacao manual: rejeita projeto de outra empresa com 404", async () => {
+    const { token } = await criarSessaoComProjeto();
+
+    const response = await POST(
+      criarRequestPost(
+        {
+          modoCriacao: "manual",
+          projetoId: "00000000-0000-0000-0000-000000000000",
+          itens: [{ descricao: "Apresentar ART" }],
+        },
+        token,
+      ),
+    );
+
+    expect(response.status).toBe(404);
+    expect(criarComuniqueSeManual).not.toHaveBeenCalled();
   });
 });
 

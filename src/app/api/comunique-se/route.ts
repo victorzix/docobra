@@ -7,7 +7,7 @@ import { listarComuniqueSe } from "@/db/queries/comunique-se";
 import { criarComuniqueSeSchema } from "@/lib/validations/comunique-se/create.schema";
 import type { ComuniqueSeResponse } from "@/lib/validations/comunique-se/response.schema";
 import type { PaginatedResponse } from "@/lib/pagination";
-import { processarComuniqueSe } from "@/lib/comunique-se/processar";
+import { criarComuniqueSeManual, processarComuniqueSe } from "@/lib/comunique-se/processar";
 import { ehPdfValido, TAMANHO_MAXIMO_PDF_BYTES } from "@/lib/comunique-se/storage";
 
 export async function GET(request: NextRequest) {
@@ -69,17 +69,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Projeto não encontrado." }, { status: 404 });
   }
 
-  const pdfBuffer = Buffer.from(parsed.data.pdfBase64, "base64");
-
-  if (!ehPdfValido(pdfBuffer)) {
-    return NextResponse.json({ error: "Arquivo não é um PDF válido." }, { status: 400 });
-  }
-
-  if (pdfBuffer.length > TAMANHO_MAXIMO_PDF_BYTES) {
-    return NextResponse.json({ error: "Arquivo excede o tamanho máximo de 10MB." }, { status: 400 });
-  }
-
   try {
+    if (parsed.data.modoCriacao === "manual") {
+      const resultado = await criarComuniqueSeManual({
+        projetoId: parsed.data.projetoId,
+        empresaId: sessao.empresaId,
+        itens: parsed.data.itens,
+      });
+      return NextResponse.json({ comuniqueSe: resultado }, { status: 201 });
+    }
+
+    const pdfBuffer = Buffer.from(parsed.data.pdfBase64, "base64");
+
+    if (!ehPdfValido(pdfBuffer)) {
+      return NextResponse.json({ error: "Arquivo não é um PDF válido." }, { status: 400 });
+    }
+
+    if (pdfBuffer.length > TAMANHO_MAXIMO_PDF_BYTES) {
+      return NextResponse.json({ error: "Arquivo excede o tamanho máximo de 10MB." }, { status: 400 });
+    }
+
     const resultado = await processarComuniqueSe({
       projetoId: parsed.data.projetoId,
       empresaId: sessao.empresaId,
