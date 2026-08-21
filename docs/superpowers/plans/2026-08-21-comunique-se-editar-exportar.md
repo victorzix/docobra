@@ -115,7 +115,7 @@ por:
 - [ ] **Step 6: Rodar o type-check e a suíte inteira**
 
 Run: `npx tsc --noEmit -p tsconfig.json`
-Expected: zero erros (os call-sites que hoje assumem `pdfOriginalUrl` não-nulo — a página de detalhe — ainda não foram tocados; isso é intencional, viram Task 12).
+Expected: 3 erros pré-existentes, todos em call-sites que hoje assumem `pdfOriginalUrl` não-nulo e que esta task não toca de propósito: `src/app/dashboard/comunique-se/[id]/page.tsx` (deferido pra Task 12), `src/app/api/comunique-se/[id]/retry/route.ts` e o teste `reprocessarComuniqueSe` em `src/lib/comunique-se/__tests__/processar.test.ts` (os dois últimos resolvidos na Task 6, que já widening a assinatura de `reprocessarComuniqueSe`). Nenhum erro novo além desses três.
 
 Run: `npx vitest run`
 Expected: PASS — nenhuma outra suíte deveria ter quebrado com essa mudança de tipo (mudar de `string` pra `string | null` é um afrouxamento, não uma restrição nova).
@@ -1105,7 +1105,7 @@ git commit -m "feat: add discriminated create schema and generalize item schemas
 
 **Interfaces:**
 - Consumes: `detectarModeloEmbutido` de `./modelo-detectar` (Task 3), `criarComuniqueSePronto` de `@/db/queries/comunique-se` (Task 4). O teste também usa `gerarModeloExportado` de `@/lib/comunique-se/modelo-exportar` (Task 2) pra gerar a fixture do round-trip completo (exportar → reimportar), em vez de montar o anexo manualmente.
-- Produces: `export async function processarComuniqueSe(...)` — mesma assinatura de hoje, mas agora tenta detecção antes de extrair+IA. `export async function criarComuniqueSeManual(input: { projetoId: string; empresaId: string; itens: { descricao: string }[] }): Promise<ResultadoProcessamento>` (nova). `ResultadoProcessamento.pdfOriginalUrl` passa a ser `string | null`. Task 7 usa `criarComuniqueSeManual`.
+- Produces: `export async function processarComuniqueSe(...)` — mesma assinatura de hoje, mas agora tenta detecção antes de extrair+IA. `export async function criarComuniqueSeManual(input: { projetoId: string; empresaId: string; itens: { descricao: string }[] }): Promise<ResultadoProcessamento>` (nova). `ResultadoProcessamento.pdfOriginalUrl` passa a ser `string | null`. `reprocessarComuniqueSe`'s terceiro parâmetro (`pdfOriginalUrl`) passa de `string` pra `string | null` — mesma assinatura de nome/posição, só o tipo alargado. Task 7 usa `criarComuniqueSeManual`.
 
 - [ ] **Step 1: Escrever os testes novos (vão falhar — a integração e a função não existem)**
 
@@ -1250,12 +1250,37 @@ export async function criarComuniqueSeManual(input: {
 }
 ```
 
-Não mexa em `finalizarProcessamento` nem em `reprocessarComuniqueSe` — o retry só acontece quando o status já está `erro`, o que significa que a detecção já falhou na tentativa original (se tivesse detectado, o status já teria virado `pronto` direto, sem nunca chegar em `erro`), então repetir só o caminho de IA no retry continua correto.
+Não mexa na LÓGICA de `finalizarProcessamento` nem de `reprocessarComuniqueSe` — o retry só acontece quando o status já está `erro`, o que significa que a detecção já falhou na tentativa original (se tivesse detectado, o status já teria virado `pronto` direto, sem nunca chegar em `erro`), então repetir só o caminho de IA no retry continua correto.
+
+Só o **tipo** do parâmetro de `reprocessarComuniqueSe` precisa mudar — a Task 1 tornou `ComuniqueSe.pdfOriginalUrl` (e, por consequência, `ResultadoProcessamento.pdfOriginalUrl` já editado acima) `string | null`, mas a assinatura de `reprocessarComuniqueSe` ainda espera `string`. Isso já quebra o type-check em dois lugares que esta task não toca de outra forma: a rota de retry (`src/app/api/comunique-se/[id]/retry/route.ts`, que passa `comuniqueSeEncontrado.pdfOriginalUrl` — agora `string | null` — pra essa função) e o teste já existente `reprocessarComuniqueSe` (que passa `linhaErro.pdfOriginalUrl`, mesmo motivo). Troque a assinatura:
+
+```ts
+export async function reprocessarComuniqueSe(
+  id: string,
+  numero: number,
+  pdfOriginalUrl: string,
+): Promise<ResultadoProcessamento> {
+```
+
+por:
+
+```ts
+export async function reprocessarComuniqueSe(
+  id: string,
+  numero: number,
+  pdfOriginalUrl: string | null,
+): Promise<ResultadoProcessamento> {
+```
+
+(o corpo da função não muda — ela só ecoa esse valor de volta no `ResultadoProcessamento` retornado, nunca usa `pdfOriginalUrl` pra ler o arquivo, então aceitar `null` aqui não quebra nada; na prática nunca chega `null` de verdade, já que retry só roda em Comunique-se que veio de PDF).
 
 - [ ] **Step 4: Rodar os testes e confirmar que passam**
 
 Run: `npx vitest run src/lib/comunique-se/__tests__/processar.test.ts`
 Expected: PASS — 6 testes (os 4 já existentes + os 2 novos).
+
+Run: `npx tsc --noEmit -p tsconfig.json`
+Expected: os erros em `src/app/api/comunique-se/[id]/retry/route.ts` e no teste `reprocessarComuniqueSe` (presentes desde a Task 1) desaparecem. Deve sobrar só o erro em `src/app/dashboard/comunique-se/[id]/page.tsx`, que é intencionalmente deferido pra Task 12.
 
 - [ ] **Step 5: Commit**
 
