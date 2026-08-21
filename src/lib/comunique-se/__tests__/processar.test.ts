@@ -5,6 +5,7 @@ import puppeteer from "puppeteer";
 
 import { db } from "@/db";
 import { comuniqueSe, empresa, projeto } from "@/db/schema";
+import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 
 vi.mock("@/core/llm", () => ({
   comuniqueSeRouter: {
@@ -172,6 +173,28 @@ describe("processarComuniqueSe", () => {
     const chamada = vi.mocked(comuniqueSeRouter.extractStructured).mock.calls[0][0];
     expect(chamada.userPrompt.length).toBe(100_000);
     expect(chamada.userPrompt).toBe(textoCompleto.slice(0, 100_000));
+  });
+
+  it("lança CriacaoParcialError com o id da linha já persistida quando a IA falha", async () => {
+    const { empresa: novaEmpresa, projeto: novoProjeto } = await criarProjetoDeTeste();
+    const pdf = await gerarPdfDeTeste("<p>Exigencia numero um: apresentar ART.</p>");
+    vi.mocked(comuniqueSeRouter.extractStructured).mockRejectedValue(new Error("LLM indisponível"));
+
+    let erroCapturado: unknown;
+    try {
+      await processarComuniqueSe({
+        projetoId: novoProjeto.id,
+        empresaId: novaEmpresa.id,
+        pdfBuffer: pdf,
+      });
+    } catch (erro) {
+      erroCapturado = erro;
+    }
+
+    expect(erroCapturado).toBeInstanceOf(CriacaoParcialError);
+    expect((erroCapturado as CriacaoParcialError).message).toBe("LLM indisponível");
+    const [linha] = await db.select().from(comuniqueSe);
+    expect((erroCapturado as CriacaoParcialError).id).toBe(linha.id);
   });
 });
 

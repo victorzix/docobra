@@ -11,6 +11,7 @@ import {
 import { extrairTextoPdf } from "./extrair-texto";
 import { detectarModeloEmbutido } from "./modelo-detectar";
 import { lerArquivo, salvarArquivo } from "./storage";
+import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 
 const SCHEMA_CHECKLIST = {
   type: "object",
@@ -57,7 +58,7 @@ async function finalizarProcessamento(id: string, pdfBuffer: Buffer): Promise<{ 
     return { status: "pronto" };
   } catch (error) {
     await marcarComoErro(id);
-    throw error;
+    throw new CriacaoParcialError(error instanceof Error ? error.message : "Erro ao processar.", id);
   }
 }
 
