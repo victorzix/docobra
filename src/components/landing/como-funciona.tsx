@@ -10,6 +10,8 @@ const BLOCOS = [
     descricao:
       "Preencha um formulário curto — pode ser até por áudio — e receba um documento técnico completo, já formatado em ABNT, pronto pra protocolar.",
     imagem: "/landing/screenshots/memorial.png",
+    imagemLargura: 672,
+    imagemAltura: 781,
     alt: "Formulário de criação do Memorial Descritivo no DocObra",
   },
   {
@@ -18,6 +20,8 @@ const BLOCOS = [
     descricao:
       "Suba o PDF que a prefeitura emitiu e receba um checklist em linguagem simples, com cada exigência traduzida em uma tarefa objetiva.",
     imagem: "/landing/screenshots/comunique-se.png",
+    imagemLargura: 672,
+    imagemAltura: 296,
     alt: "Checklist de exigências do Comunique-se no DocObra",
   },
 ];
@@ -51,8 +55,9 @@ export function ComoFunciona() {
                 <Image
                   src={bloco.imagem}
                   alt={bloco.alt}
-                  width={960}
-                  height={640}
+                  width={bloco.imagemLargura}
+                  height={bloco.imagemAltura}
+                  sizes="(min-width: 768px) 50vw, 100vw"
                   className="h-auto w-full"
                 />
               </div>
