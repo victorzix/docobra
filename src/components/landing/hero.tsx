@@ -12,10 +12,10 @@ export function Hero() {
       <div className="absolute inset-0 -z-0 opacity-80">
         <ScrollScene />
       </div>
-      <div className="sticky top-0 h-screen bg-gradient-to-b from-[#0a2c4d]/40 via-[#0a2c4d]/70 to-[#0a2c4d]" />
 
-      <div className="sticky top-0 z-10 flex h-screen items-center justify-center">
-        <div className="mx-auto max-w-3xl px-6 text-center">
+      <div className="sticky top-0 z-10 flex h-screen w-full items-center justify-center">
+        <div className="absolute inset-0 -z-0 bg-gradient-to-b from-[#0a2c4d]/40 via-[#0a2c4d]/70 to-[#0a2c4d]" />
+        <div className="relative z-10 mx-auto max-w-3xl px-6 text-center">
         <motion.span
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
