@@ -60,8 +60,9 @@ export function ScrollScene() {
         autoplay: onScroll({
           target,
           sync: true,
+          // Ordem das strings é "<container> <target>", não "<target> <container>".
           enter: "top top",
-          leave: "bottom top",
+          leave: "top bottom",
         }),
       })
         .add(walls, {
@@ -83,7 +84,7 @@ export function ScrollScene() {
   }, []);
 
   return (
-    <div ref={root} className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[220vh] w-full">
+    <div ref={root} className="pointer-events-none absolute inset-x-0 top-0 h-[220vh] w-full">
       <div className="sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden">
         <div style={{ perspective: "1400px" }}>
           <div className="scene-wrap" style={{ transformStyle: "preserve-3d", transform: "rotateX(58deg)" }}>
