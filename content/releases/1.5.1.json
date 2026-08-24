@@ -1,0 +1,55 @@
+{
+  "releasedAt": "2026-08-22T12:00:00Z",
+  "title": {
+    "en": "Comunique-se: create and edit checklists directly, export/import your own format",
+    "pt": "Comunique-se: crie e edite checklists direto no sistema, exporte/importe no formato próprio",
+    "es": "Comunique-se: crea y edita checklists directamente, exporta/importa en formato propio"
+  },
+  "notes": {
+    "en": "Comunique-se no longer requires a city-hall PDF to get started: type a checklist by hand, edit it fully after creation, and export it as a portable file that re-imports instantly — no AI reprocessing needed. Also more resilient downloads and creation flows across both product modules.",
+    "pt": "O Comunique-se não exige mais um PDF da prefeitura pra começar: digite um checklist na mão, edite tudo depois de criado, e exporte como um arquivo portátil que reimporta na hora — sem reprocessar com IA. Também downloads e fluxos de criação mais resilientes nos dois módulos do produto.",
+    "es": "Comunique-se ya no requiere un PDF de la municipalidad para empezar: escribe un checklist a mano, edítalo por completo después de crearlo, y expórtalo como un archivo portátil que se reimporta al instante — sin reprocesar con IA. También descargas y flujos de creación más resilientes en los dos módulos del producto."
+  },
+  "changes": [
+    {
+      "type": "added",
+      "text": {
+        "en": "Create a Comunique-se by typing its requirements directly, with no PDF upload — useful when there isn't one on hand yet, or when recreating one from another system",
+        "pt": "Crie um Comunique-se digitando as exigências direto, sem precisar de PDF — útil quando ainda não tem um em mãos, ou pra recriar um vindo de outro sistema",
+        "es": "Crea un Comunique-se escribiendo las exigencias directamente, sin necesidad de PDF — útil cuando todavía no tienes uno a mano, o para recrear uno desde otro sistema"
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "The checklist is now fully editable, regardless of how it was created: add new items, edit any item's text inline, or remove one",
+        "pt": "O checklist agora é totalmente editável, não importa como foi criado: adicione itens novos, edite o texto de qualquer item direto na tela, ou remova um",
+        "es": "El checklist ahora es totalmente editable sin importar cómo fue creado: agrega ítems nuevos, edita el texto de cualquier ítem directamente en la pantalla, o elimina uno"
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "Export a Comunique-se as a DocObra-native file — a real PDF with the checklist embedded inside — and re-import it into a new Comunique-se, which is detected automatically and skips AI processing entirely",
+        "pt": "Exporte um Comunique-se num formato próprio do DocObra — um PDF de verdade com o checklist embutido dentro — e reimporte num Comunique-se novo, que detecta isso automaticamente e pula o processamento por IA",
+        "es": "Exporta un Comunique-se en un formato propio de DocObra — un PDF real con el checklist incrustado adentro — y reimpórtalo en un Comunique-se nuevo, que lo detecta automáticamente y se salta el procesamiento por IA"
+      }
+    },
+    {
+      "type": "changed",
+      "text": {
+        "en": "Downloading the original PDF or the exported model now shows real progress and a clear inline message if it fails, instead of silently freezing or landing on a raw error page",
+        "pt": "Baixar o PDF original ou o modelo exportado agora mostra progresso de verdade e uma mensagem clara ali mesmo se falhar, em vez de travar silenciosamente ou cair numa página de erro crua",
+        "es": "Descargar el PDF original o el modelo exportado ahora muestra progreso real y un mensaje claro ahí mismo si falla, en lugar de congelarse en silencio o caer en una página de error cruda"
+      }
+    },
+    {
+      "type": "fixed",
+      "text": {
+        "en": "If creation fails right after starting (Memorial or Comunique-se), you're taken straight to the item that was already saved — with its retry button ready — instead of a dead-end error that could tempt a duplicate submission",
+        "pt": "Se a criação falhar logo no início (Memorial ou Comunique-se), você é levado direto pro item que já foi salvo — com o botão de tentar de novo pronto — em vez de um erro sem saída que podia levar a um envio duplicado",
+        "es": "Si la creación falla justo al empezar (Memorial o Comunique-se), te lleva directo al ítem que ya fue guardado — con el botón de reintentar listo — en lugar de un error sin salida que podía llevar a un envío duplicado"
+      }
+    }
+  ]
+}
