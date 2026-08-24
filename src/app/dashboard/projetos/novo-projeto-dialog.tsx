@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   criarProjetoSchema,
@@ -30,7 +30,7 @@ import {
 
 export function NovoProjetoDialog() {
   const [open, setOpen] = useState(false);
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const criar = useCriarProjeto();
 
   const form = useForm<CriarProjetoInput>({
@@ -43,7 +43,7 @@ export function NovoProjetoDialog() {
       onSuccess: () => {
         setOpen(false);
         form.reset();
-        router.refresh();
+        queryClient.invalidateQueries({ queryKey: ["projetos"] });
       },
     });
   }

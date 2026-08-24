@@ -49,9 +49,10 @@ interface FormValues {
 interface NovoMemorialFormProps {
   projetos: Projeto[];
   onSuccess: () => void;
+  onPendingChange?: (pending: boolean) => void;
 }
 
-export function NovoMemorialForm({ projetos, onSuccess }: NovoMemorialFormProps) {
+export function NovoMemorialForm({ projetos, onSuccess, onPendingChange }: NovoMemorialFormProps) {
   const [modo, setModo] = useState<"texto" | "audio">("texto");
   const [audio, setAudio] = useState<{ base64: string; mimeType: string } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -64,6 +65,10 @@ export function NovoMemorialForm({ projetos, onSuccess }: NovoMemorialFormProps)
       erroRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [erro]);
+
+  useEffect(() => {
+    onPendingChange?.(criar.isPending);
+  }, [criar.isPending, onPendingChange]);
 
   function onInvalid(errors: FieldErrors<FormValues>) {
     const idDoPrimeiroCampo = errors.projetoId
@@ -167,7 +172,7 @@ export function NovoMemorialForm({ projetos, onSuccess }: NovoMemorialFormProps)
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="grid gap-2">
           <Label htmlFor="numeroPavimentos">Nº de pavimentos</Label>
           <Input id="numeroPavimentos" type="number" {...register("numeroPavimentos")} />

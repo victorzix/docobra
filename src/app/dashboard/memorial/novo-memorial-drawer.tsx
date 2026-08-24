@@ -20,6 +20,7 @@ interface NovoMemorialDrawerProps {
 
 export function NovoMemorialDrawer({ projetos }: NovoMemorialDrawerProps) {
   const [open, setOpen] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   const queryClient = useQueryClient();
 
   function handleSuccess() {
@@ -27,8 +28,13 @@ export function NovoMemorialDrawer({ projetos }: NovoMemorialDrawerProps) {
     queryClient.invalidateQueries({ queryKey: ["memoriais"] });
   }
 
+  function handleOpenChange(proximoOpen: boolean) {
+    if (!proximoOpen && enviando) return;
+    setOpen(proximoOpen);
+  }
+
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer open={open} onOpenChange={handleOpenChange} dismissible={!enviando}>
       <DrawerTrigger asChild>
         <Button>Novo memorial</Button>
       </DrawerTrigger>
@@ -37,7 +43,7 @@ export function NovoMemorialDrawer({ projetos }: NovoMemorialDrawerProps) {
           <DrawerTitle>Novo memorial descritivo</DrawerTitle>
         </DrawerHeader>
         <div className="px-4 pb-6">
-          <NovoMemorialForm projetos={projetos} onSuccess={handleSuccess} />
+          <NovoMemorialForm projetos={projetos} onSuccess={handleSuccess} onPendingChange={setEnviando} />
         </div>
       </DrawerContent>
     </Drawer>

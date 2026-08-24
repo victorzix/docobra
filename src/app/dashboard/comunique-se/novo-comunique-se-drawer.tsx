@@ -20,6 +20,7 @@ interface NovoComuniqueSeDrawerProps {
 
 export function NovoComuniqueSeDrawer({ projetos }: NovoComuniqueSeDrawerProps) {
   const [open, setOpen] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   const queryClient = useQueryClient();
 
   function handleSuccess() {
@@ -27,8 +28,13 @@ export function NovoComuniqueSeDrawer({ projetos }: NovoComuniqueSeDrawerProps) 
     queryClient.invalidateQueries({ queryKey: ["comunique-se"] });
   }
 
+  function handleOpenChange(proximoOpen: boolean) {
+    if (!proximoOpen && enviando) return;
+    setOpen(proximoOpen);
+  }
+
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer open={open} onOpenChange={handleOpenChange} dismissible={!enviando}>
       <DrawerTrigger asChild>
         <Button>Novo Comunique-se</Button>
       </DrawerTrigger>
@@ -37,7 +43,7 @@ export function NovoComuniqueSeDrawer({ projetos }: NovoComuniqueSeDrawerProps) 
           <DrawerTitle>Novo Comunique-se</DrawerTitle>
         </DrawerHeader>
         <div className="px-4 pb-6">
-          <NovoComuniqueSeForm projetos={projetos} onSuccess={handleSuccess} />
+          <NovoComuniqueSeForm projetos={projetos} onSuccess={handleSuccess} onPendingChange={setEnviando} />
         </div>
       </DrawerContent>
     </Drawer>

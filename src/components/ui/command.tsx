@@ -73,11 +73,49 @@ function CommandInput({
   );
 }
 
-function CommandList({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.List>) {
+function CommandList({
+  className,
+  onWheel,
+  onTouchStart,
+  onTouchMove,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.List>) {
+  // Alguns navegadores nao entregam o scroll nativo (wheel no desktop, arrastar o dedo no
+  // mobile) pra esse popover quando ele esta aninhado dentro do Drawer (elementos
+  // position:fixed sobrepostos) -- aplicamos o delta manualmente como reforco, sem
+  // depender do roteamento nativo do gesto.
+  const ultimoToqueY = React.useRef<number | null>(null);
+
+  function handleWheel(event: React.WheelEvent<HTMLDivElement>) {
+    onWheel?.(event);
+    if (event.defaultPrevented) return;
+    event.currentTarget.scrollTop += event.deltaY;
+  }
+
+  function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
+    onTouchStart?.(event);
+    ultimoToqueY.current = event.touches[0]?.clientY ?? null;
+  }
+
+  function handleTouchMove(event: React.TouchEvent<HTMLDivElement>) {
+    onTouchMove?.(event);
+    if (event.defaultPrevented) return;
+    const toqueY = event.touches[0]?.clientY;
+    if (toqueY === undefined || ultimoToqueY.current === null) return;
+    event.currentTarget.scrollTop += ultimoToqueY.current - toqueY;
+    ultimoToqueY.current = toqueY;
+  }
+
   return (
     <CommandPrimitive.List
       data-slot="command-list"
-      className={cn("max-h-[300px] scroll-py-1 overflow-x-hidden overflow-y-auto", className)}
+      onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      className={cn(
+        "max-h-[min(300px,var(--radix-popover-content-available-height),50dvh)] scroll-py-1 overflow-x-hidden overflow-y-auto overscroll-contain",
+        className,
+      )}
       {...props}
     />
   );

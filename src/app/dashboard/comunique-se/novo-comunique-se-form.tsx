@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 
@@ -24,9 +24,10 @@ interface FormValues {
 interface NovoComuniqueSeFormProps {
   projetos: Projeto[];
   onSuccess: () => void;
+  onPendingChange?: (pending: boolean) => void;
 }
 
-export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeFormProps) {
+export function NovoComuniqueSeForm({ projetos, onSuccess, onPendingChange }: NovoComuniqueSeFormProps) {
   const [modo, setModo] = useState<"pdf" | "manual">("pdf");
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [itensDigitados, setItensDigitados] = useState<{ id: string; texto: string }[]>([
@@ -36,6 +37,10 @@ export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeForm
   const criar = useCriarComuniqueSe();
   const router = useRouter();
   const { handleSubmit, control } = useForm<FormValues>();
+
+  useEffect(() => {
+    onPendingChange?.(criar.isPending);
+  }, [criar.isPending, onPendingChange]);
 
   function handleArquivoSelecionado(event: React.ChangeEvent<HTMLInputElement>) {
     const selecionado = event.target.files?.[0] ?? null;
