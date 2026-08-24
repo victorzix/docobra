@@ -61,8 +61,11 @@ export function ScrollScene() {
           target,
           sync: true,
           // Ordem das strings é "<container> <target>", não "<target> <container>".
+          // "bottom bottom" faz a timeline fechar exatamente onde o sticky
+          // solta (scrollY = altura do alvo - viewport), então a animação
+          // completa ainda visível em vez de terminar fora da tela.
           enter: "top top",
-          leave: "top bottom",
+          leave: "bottom bottom",
         }),
       })
         .add(walls, {
