@@ -97,6 +97,33 @@ describe("PATCH /api/comunique-se/[id]/itens", () => {
     expect(response.status).toBe(404);
   });
 
+  it("retorna 404 pra Comunique-se de outra empresa", async () => {
+    const [empresaA] = await db.insert(empresa).values({ nome: "Empresa A" }).returning();
+    const [empresaB] = await db.insert(empresa).values({ nome: "Empresa B" }).returning();
+    const [usuarioB] = await db
+      .insert(usuario)
+      .values({ nome: "B", email: "b@ancar.com.br", senhaHash: "hash-fake", empresaId: empresaB.id })
+      .returning();
+    const [projetoA] = await db.insert(projeto).values({ nome: "Projeto A", empresaId: empresaA.id }).returning();
+    const [linhaA] = await db
+      .insert(comuniqueSe)
+      .values({
+        projetoId: projetoA.id,
+        numero: 1,
+        status: "pronto",
+        pdfOriginalUrl: "/x",
+        checklistJson: { itens: [{ id: "item-1", descricao: "Apresentar ART", concluida: false }] },
+      })
+      .returning();
+    const tokenB = await assinarToken({ userId: usuarioB.id, empresaId: empresaB.id, papel: usuarioB.papel });
+
+    const response = await PATCH(criarRequest({ itemId: "item-1", concluida: true }, tokenB), {
+      params: Promise.resolve({ id: linhaA.id }),
+    });
+
+    expect(response.status).toBe(404);
+  });
+
   it("rejeita alternar item de Comunique-se que ainda não está pronto com 400", async () => {
     const { token, comuniqueSeId } = await criarSessaoAindaProcessando();
 
@@ -152,6 +179,33 @@ describe("POST /api/comunique-se/[id]/itens", () => {
 
     const response = await POST(criarRequest({ descricao: "Novo item" }, token), {
       params: Promise.resolve({ id: "00000000-0000-0000-0000-000000000000" }),
+    });
+
+    expect(response.status).toBe(404);
+  });
+
+  it("retorna 404 pra Comunique-se de outra empresa", async () => {
+    const [empresaA] = await db.insert(empresa).values({ nome: "Empresa A" }).returning();
+    const [empresaB] = await db.insert(empresa).values({ nome: "Empresa B" }).returning();
+    const [usuarioB] = await db
+      .insert(usuario)
+      .values({ nome: "B", email: "b@ancar.com.br", senhaHash: "hash-fake", empresaId: empresaB.id })
+      .returning();
+    const [projetoA] = await db.insert(projeto).values({ nome: "Projeto A", empresaId: empresaA.id }).returning();
+    const [linhaA] = await db
+      .insert(comuniqueSe)
+      .values({
+        projetoId: projetoA.id,
+        numero: 1,
+        status: "pronto",
+        pdfOriginalUrl: "/x",
+        checklistJson: { itens: [] },
+      })
+      .returning();
+    const tokenB = await assinarToken({ userId: usuarioB.id, empresaId: empresaB.id, papel: usuarioB.papel });
+
+    const response = await POST(criarRequest({ descricao: "Novo item" }, tokenB), {
+      params: Promise.resolve({ id: linhaA.id }),
     });
 
     expect(response.status).toBe(404);

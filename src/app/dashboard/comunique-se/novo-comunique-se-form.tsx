@@ -29,7 +29,9 @@ interface NovoComuniqueSeFormProps {
 export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeFormProps) {
   const [modo, setModo] = useState<"pdf" | "manual">("pdf");
   const [arquivo, setArquivo] = useState<File | null>(null);
-  const [itensDigitados, setItensDigitados] = useState<string[]>([""]);
+  const [itensDigitados, setItensDigitados] = useState<{ id: string; texto: string }[]>([
+    { id: crypto.randomUUID(), texto: "" },
+  ]);
   const [erro, setErro] = useState<string | null>(null);
   const criar = useCriarComuniqueSe();
   const router = useRouter();
@@ -57,16 +59,16 @@ export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeForm
     setArquivo(selecionado);
   }
 
-  function handleItemDigitadoChange(indice: number, valor: string) {
-    setItensDigitados((atual) => atual.map((item, i) => (i === indice ? valor : item)));
+  function handleItemDigitadoChange(id: string, valor: string) {
+    setItensDigitados((atual) => atual.map((item) => (item.id === id ? { ...item, texto: valor } : item)));
   }
 
   function handleAdicionarLinha() {
-    setItensDigitados((atual) => [...atual, ""]);
+    setItensDigitados((atual) => [...atual, { id: crypto.randomUUID(), texto: "" }]);
   }
 
-  function handleRemoverLinha(indice: number) {
-    setItensDigitados((atual) => (atual.length === 1 ? atual : atual.filter((_, i) => i !== indice)));
+  function handleRemoverLinha(id: string) {
+    setItensDigitados((atual) => (atual.length === 1 ? atual : atual.filter((item) => item.id !== id)));
   }
 
   async function onSubmit(values: FormValues) {
@@ -101,7 +103,7 @@ export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeForm
       return;
     }
 
-    const itensPreenchidos = itensDigitados.map((item) => item.trim()).filter((item) => item.length > 0);
+    const itensPreenchidos = itensDigitados.map((item) => item.texto.trim()).filter((texto) => texto.length > 0);
     const payload = {
       modoCriacao: "manual" as const,
       projetoId: values.projetoId,
@@ -178,18 +180,18 @@ export function NovoComuniqueSeForm({ projetos, onSuccess }: NovoComuniqueSeForm
         <div className="grid gap-2">
           <Label>Exigências</Label>
           <div className="grid gap-2">
-            {itensDigitados.map((item, indice) => (
-              <div key={indice} className="flex gap-2">
+            {itensDigitados.map((item) => (
+              <div key={item.id} className="flex gap-2">
                 <Input
-                  value={item}
-                  onChange={(event) => handleItemDigitadoChange(indice, event.target.value)}
+                  value={item.texto}
+                  onChange={(event) => handleItemDigitadoChange(item.id, event.target.value)}
                   placeholder="Descreva a exigência"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleRemoverLinha(indice)}
+                  onClick={() => handleRemoverLinha(item.id)}
                   disabled={itensDigitados.length === 1}
                 >
                   Remover
