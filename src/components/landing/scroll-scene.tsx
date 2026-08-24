@@ -59,7 +59,12 @@ export function ScrollScene() {
       createTimeline({
         autoplay: onScroll({
           target,
-          sync: true,
+          // Número (não `true`): em animejs, `sync: true` vira syncSmooth = 1 e
+          // o próprio observer PULA o branch de lerp (`if (syncSmooth < 1)`),
+          // dando um mapeamento scroll→progresso exato de 1:1 — é isso que dava
+          // a sensação "travada"/rígida. Com um valor < 1 o lerp entra e o
+          // progresso persegue o scroll com amortecimento entre frames.
+          sync: 0.35,
           // Ordem das strings é "<container> <target>", não "<target> <container>".
           // "bottom bottom" faz a timeline fechar exatamente onde o sticky
           // solta (scrollY = altura do alvo - viewport), então a animação
@@ -91,7 +96,32 @@ export function ScrollScene() {
       <div className="sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden">
         <div style={{ perspective: "1400px" }}>
           <div className="scene-wrap" style={{ transformStyle: "preserve-3d", transform: "rotateX(58deg)" }}>
-            <svg width={280} height={200} viewBox="0 0 240 180" fill="none">
+            <svg
+              width={280}
+              height={200}
+              viewBox="0 0 240 180"
+              fill="none"
+              style={{ filter: "drop-shadow(0 0 10px rgba(139, 92, 246, 0.45))" }}
+            >
+            <defs>
+              {/* userSpaceOnUse (não o objectBoundingBox default): <line>
+                  horizontal/vertical tem bounding box de área zero e um
+                  gradiente em unidades de bbox degenera — o traço simplesmente
+                  não pinta. Em user space o gradiente é definido sobre o
+                  viewBox e vale pra todos os elementos. */}
+              <linearGradient
+                id="traco-marca"
+                gradientUnits="userSpaceOnUse"
+                x1={0}
+                y1={0}
+                x2={240}
+                y2={180}
+              >
+                <stop offset="0%" stopColor="#22d3ee" />
+                <stop offset="50%" stopColor="#8b5cf6" />
+                <stop offset="100%" stopColor="#e879f9" />
+              </linearGradient>
+            </defs>
             {WALLS.map((w) => (
               <line
                 key={w.key}
@@ -100,7 +130,7 @@ export function ScrollScene() {
                 y1={w.y1}
                 x2={w.x2}
                 y2={w.y2}
-                stroke="#67e8f9"
+                stroke="url(#traco-marca)"
                 strokeWidth={2}
                 strokeLinecap="square"
               />
@@ -108,7 +138,7 @@ export function ScrollScene() {
             {FURNITURE.map((f) => {
               const props = {
                 className: "furniture",
-                stroke: "#67e8f9",
+                stroke: "url(#traco-marca)",
                 strokeWidth: 1.25,
                 strokeLinecap: "round" as const,
               };
@@ -130,8 +160,8 @@ export function ScrollScene() {
                 x={r.x}
                 y={r.y}
                 textAnchor="middle"
-                fill="#67e8f9"
-                fillOpacity={0.75}
+                fill="#a5f3fc"
+                fillOpacity={0.9}
                 fontSize={9}
                 fontFamily="var(--font-geist-mono)"
                 letterSpacing={0.5}
