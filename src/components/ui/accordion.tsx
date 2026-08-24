@@ -21,7 +21,7 @@ function AccordionItem({
   return (
     <AccordionPrimitive.Item
       data-slot="accordion-item"
-      className={cn("border-b", className)}
+      className={cn("border-b last:border-b-0", className)}
       {...props}
     />
   );
@@ -37,7 +37,7 @@ function AccordionTrigger({
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
         className={cn(
-          "flex flex-1 items-center justify-between gap-4 py-4 text-left font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180",
+          "flex flex-1 items-center justify-between gap-4 py-4 text-left font-medium transition-all hover:underline outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] [&[data-state=open]>svg]:rotate-180",
           className,
         )}
         {...props}
@@ -51,6 +51,7 @@ function AccordionTrigger({
 
 function AccordionContent({
   className,
+  children,
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Content>) {
   return (
@@ -61,7 +62,9 @@ function AccordionContent({
         className,
       )}
       {...props}
-    />
+    >
+      <div className="pt-0 pb-4">{children}</div>
+    </AccordionPrimitive.Content>
   );
 }
 
