@@ -60,8 +60,8 @@ export function ScrollScene() {
         autoplay: onScroll({
           target,
           sync: true,
-          enter: "bottom bottom",
-          leave: "top top",
+          enter: "top top",
+          leave: "bottom top",
         }),
       })
         .add(walls, {
@@ -83,10 +83,11 @@ export function ScrollScene() {
   }, []);
 
   return (
-    <div ref={root} className="pointer-events-none flex h-full w-full items-center justify-center">
-      <div style={{ perspective: "1400px" }}>
-        <div className="scene-wrap" style={{ transformStyle: "preserve-3d", transform: "rotateX(58deg)" }}>
-          <svg width={280} height={200} viewBox="0 0 240 180" fill="none">
+    <div ref={root} className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[220vh] w-full">
+      <div className="sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden">
+        <div style={{ perspective: "1400px" }}>
+          <div className="scene-wrap" style={{ transformStyle: "preserve-3d", transform: "rotateX(58deg)" }}>
+            <svg width={280} height={200} viewBox="0 0 240 180" fill="none">
             {WALLS.map((w) => (
               <line
                 key={w.key}
@@ -102,22 +103,21 @@ export function ScrollScene() {
             ))}
             {FURNITURE.map((f) => {
               const props = {
-                key: f.key,
                 className: "furniture",
                 stroke: "#67e8f9",
                 strokeWidth: 1.25,
                 strokeLinecap: "round" as const,
               };
               if (f.type === "rect") {
-                return <rect {...props} x={f.x} y={f.y} width={f.width} height={f.height} />;
+                return <rect key={f.key} {...props} x={f.x} y={f.y} width={f.width} height={f.height} />;
               }
               if (f.type === "line") {
-                return <line {...props} x1={f.x1} y1={f.y1} x2={f.x2} y2={f.y2} />;
+                return <line key={f.key} {...props} x1={f.x1} y1={f.y1} x2={f.x2} y2={f.y2} />;
               }
               if (f.type === "circle") {
-                return <circle {...props} cx={f.cx} cy={f.cy} r={f.r} />;
+                return <circle key={f.key} {...props} cx={f.cx} cy={f.cy} r={f.r} />;
               }
-              return <ellipse {...props} cx={f.cx} cy={f.cy} rx={f.rx} ry={f.ry} />;
+              return <ellipse key={f.key} {...props} cx={f.cx} cy={f.cy} rx={f.rx} ry={f.ry} />;
             })}
             {ROOMS.map((r) => (
               <text
@@ -135,7 +135,8 @@ export function ScrollScene() {
                 {r.label}
               </text>
             ))}
-          </svg>
+            </svg>
+          </div>
         </div>
       </div>
     </div>

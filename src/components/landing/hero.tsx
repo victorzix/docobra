@@ -8,13 +8,14 @@ import { ScrollScene } from "./scroll-scene";
 
 export function Hero() {
   return (
-    <section className="relative flex h-screen min-h-[640px] items-center overflow-hidden bg-[#0a2c4d]">
+    <section className="relative min-h-[220vh] overflow-hidden bg-[#0a2c4d]">
       <div className="absolute inset-0 -z-0 opacity-80">
         <ScrollScene />
       </div>
-      <div className="absolute inset-0 -z-0 bg-gradient-to-b from-[#0a2c4d]/40 via-[#0a2c4d]/70 to-[#0a2c4d]" />
+      <div className="sticky top-0 h-screen bg-gradient-to-b from-[#0a2c4d]/40 via-[#0a2c4d]/70 to-[#0a2c4d]" />
 
-      <div className="relative z-10 mx-auto max-w-3xl px-6 text-center">
+      <div className="sticky top-0 z-10 flex h-screen items-center justify-center">
+        <div className="mx-auto max-w-3xl px-6 text-center">
         <motion.span
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -58,6 +59,7 @@ export function Hero() {
             <Link href="/register">Comece agora</Link>
           </Button>
         </motion.div>
+        </div>
       </div>
     </section>
   );
