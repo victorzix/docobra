@@ -120,3 +120,45 @@
     -webkit-appearance: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Gradiente de marca — escopado à landing/página de vendas (marketing).
+   Não usar dentro do app/dashboard: lá a linguagem visual continua sendo o
+   navy sólido + cyan do --sidebar.
+   --------------------------------------------------------------------------- */
+:root {
+  --marca-de: #22d3ee; /* cyan-400 */
+  --marca-via: #8b5cf6; /* violet-500 */
+  --marca-para: #e879f9; /* fuchsia-400 */
+}
+
+@keyframes marca-desliza {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Fica fora de @layer de propósito: precisa vencer o background-color das
+   utilities do shadcn Button (bg-primary etc.) sem !important. */
+.marca-gradiente {
+  background-image: linear-gradient(
+    100deg,
+    var(--marca-de) 0%,
+    var(--marca-via) 45%,
+    var(--marca-para) 70%,
+    var(--marca-de) 100%
+  );
+  background-size: 300% 100%;
+  background-position: 0% 50%;
+  animation: marca-desliza 12s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marca-gradiente {
+    animation: none;
+  }
+}
