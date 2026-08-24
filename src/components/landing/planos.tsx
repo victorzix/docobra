@@ -68,7 +68,7 @@ export function Planos() {
           className="mx-auto max-w-2xl text-center"
         >
           <motion.div variants={ITEM} className="flex flex-col items-center">
-            <span className="bg-gradient-to-r from-cyan-600 via-violet-600 to-fuchsia-600 bg-clip-text font-mono text-xs font-semibold tracking-widest text-transparent uppercase">
+            <span className="bg-gradient-to-r from-cyan-700 via-violet-600 to-fuchsia-700 bg-clip-text font-mono text-xs font-semibold tracking-widest text-transparent uppercase">
               Planos
             </span>
             <span className="marca-gradiente mt-2 h-0.5 w-16 rounded-full" />
@@ -93,7 +93,10 @@ export function Planos() {
             <motion.div
               key={plano.key}
               variants={ITEM}
-              className="group relative h-full transition-transform duration-500 hover:-translate-y-2"
+              // transition-[translate]: transition-transform incluiria
+              // `transform`, que o framer-motion escreve inline a cada frame na
+              // entrada, empastelando a animação. O lift só usa `translate`.
+              className="group relative h-full transition-[translate] duration-500 hover:-translate-y-2"
             >
               {plano.destaque && (
                 <div
@@ -132,7 +135,7 @@ export function Planos() {
                           <span
                             className={
                               plano.destaque
-                                ? "marca-gradiente mt-px flex size-6 shrink-0 items-center justify-center rounded-lg text-white shadow-sm"
+                                ? "marca-gradiente-escuro mt-px flex size-6 shrink-0 items-center justify-center rounded-lg text-white shadow-sm"
                                 : "mt-px flex size-6 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-700"
                             }
                           >
@@ -150,7 +153,7 @@ export function Planos() {
                       size="lg"
                       className={
                         plano.destaque
-                          ? "marca-gradiente h-11 w-full font-semibold text-white shadow-lg shadow-violet-500/25 transition-transform hover:scale-[1.02]"
+                          ? "marca-gradiente-escuro h-11 w-full font-semibold text-white shadow-lg shadow-violet-500/25 transition-transform hover:scale-[1.02]"
                           : "h-11 w-full bg-[#0a2c4d] font-semibold text-white transition-transform hover:scale-[1.02] hover:bg-[#0d3a66]"
                       }
                     >
