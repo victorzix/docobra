@@ -127,9 +127,20 @@
    navy sólido + cyan do --sidebar.
    --------------------------------------------------------------------------- */
 :root {
+  /* Variante clara/vibrante: só para elementos DECORATIVOS (bordas, fios,
+     sublinhados, blobs). Nada de texto é lido contra ela — branco sobre o
+     cyan-400 dá 1.81:1, bem abaixo do mínimo AA de 4.5:1. */
   --marca-de: #22d3ee; /* cyan-400 */
   --marca-via: #8b5cf6; /* violet-500 */
   --marca-para: #e879f9; /* fuchsia-400 */
+
+  /* Variante escura: para superfícies que carregam texto branco em cima
+     (botões, badges) ou que SÃO o texto (bg-clip-text). Contraste com branco
+     verificado ao longo da rampa interpolada inteira, não só nas paradas —
+     pior ponto 5.28:1 (no cyan-700), portanto AA em todo o gradiente. */
+  --marca-de-escuro: #007595; /* cyan-700 */
+  --marca-via-escuro: #7008e7; /* violet-700 */
+  --marca-para-escuro: #a800b7; /* fuchsia-700 */
 }
 
 @keyframes marca-desliza {
@@ -142,8 +153,17 @@
   }
 }
 
-/* Fica fora de @layer de propósito: precisa vencer o background-color das
-   utilities do shadcn Button (bg-primary etc.) sem !important. */
+/* Fica fora de @layer de propósito: CSS sem layer vence qualquer CSS em layer,
+   então a classe ganha de uma utility `bg-linear-*`/`bg-gradient-*`/`bg-none`
+   aplicada no mesmo elemento independente da ordem de origem — que é o único
+   caso em que há conflito real (mesma propriedade background-image). */
+.marca-gradiente,
+.marca-gradiente-escuro {
+  background-size: 300% 100%;
+  background-position: 0% 50%;
+  animation: marca-desliza 12s ease-in-out infinite;
+}
+
 .marca-gradiente {
   background-image: linear-gradient(
     100deg,
@@ -152,13 +172,21 @@
     var(--marca-para) 70%,
     var(--marca-de) 100%
   );
-  background-size: 300% 100%;
-  background-position: 0% 50%;
-  animation: marca-desliza 12s ease-in-out infinite;
+}
+
+.marca-gradiente-escuro {
+  background-image: linear-gradient(
+    100deg,
+    var(--marca-de-escuro) 0%,
+    var(--marca-via-escuro) 45%,
+    var(--marca-para-escuro) 70%,
+    var(--marca-de-escuro) 100%
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .marca-gradiente {
+  .marca-gradiente,
+  .marca-gradiente-escuro {
     animation: none;
   }
 }
