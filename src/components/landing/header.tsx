@@ -10,9 +10,13 @@ const LINKS_NAV = [
 
 export function LandingHeader({ logado }: { logado: boolean }) {
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0a2c4d]/95 backdrop-blur supports-[backdrop-filter]:bg-[#0a2c4d]/80">
+    <header className="sticky top-0 z-50 bg-[#0a2c4d]/95 backdrop-blur supports-[backdrop-filter]:bg-[#0a2c4d]/80">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="font-mono text-lg font-semibold tracking-tight text-white">
+        <Link
+          href="/"
+          className="group flex items-center gap-2 font-mono text-lg font-semibold tracking-tight text-white"
+        >
+          <span className="marca-gradiente size-2.5 rounded-full shadow-[0_0_12px_rgba(168,85,247,0.8)]" />
           DocObra
         </Link>
 
@@ -21,16 +25,21 @@ export function LandingHeader({ logado }: { logado: boolean }) {
             <a
               key={link.href}
               href={link.href}
-              className="text-sm text-slate-300 transition-colors hover:text-white"
+              className="group relative text-sm text-slate-300 transition-colors hover:text-white"
             >
               {link.label}
+              <span className="marca-gradiente absolute -bottom-1.5 left-0 h-0.5 w-0 rounded-full transition-[width] duration-300 group-hover:w-full" />
             </a>
           ))}
         </nav>
 
         <div className="flex items-center gap-3">
           {logado ? (
-            <Button asChild size="sm" className="bg-cyan-600 text-white hover:bg-cyan-500">
+            <Button
+              asChild
+              size="sm"
+              className="marca-gradiente text-white shadow-lg shadow-violet-900/40 transition-transform hover:scale-[1.03]"
+            >
               <Link href="/dashboard">Ir pro dashboard</Link>
             </Button>
           ) : (
@@ -41,13 +50,20 @@ export function LandingHeader({ logado }: { logado: boolean }) {
               >
                 Entrar
               </Link>
-              <Button asChild size="sm" className="bg-cyan-600 text-white hover:bg-cyan-500">
+              <Button
+                asChild
+                size="sm"
+                className="marca-gradiente text-white shadow-lg shadow-violet-900/40 transition-transform hover:scale-[1.03]"
+              >
                 <Link href="/register">Cadastre-se</Link>
               </Button>
             </>
           )}
         </div>
       </div>
+
+      {/* Fio de luz no lugar do border-b chapado. */}
+      <div className="marca-gradiente h-px w-full opacity-60" />
     </header>
   );
 }
