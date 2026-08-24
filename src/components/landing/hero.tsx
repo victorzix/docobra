@@ -84,10 +84,14 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="mt-10"
           >
+            {/* has-[>svg]:px-8 não é redundante: o variant size="lg" traz
+                has-[>svg]:px-4, que o twMerge mantém (modifier diferente de
+                px-8) e que vencia a cascata — :has() soma a especificidade do
+                seu argumento, (0,1,1) contra (0,1,0) do px-8. */}
             <Button
               asChild
               size="lg"
-              className="marca-gradiente group h-12 px-8 text-base font-semibold text-white shadow-[0_10px_40px_-8px_rgba(139,92,246,0.7)] transition-transform hover:scale-105"
+              className="marca-gradiente-escuro group h-12 px-8 text-base font-semibold text-white shadow-[0_10px_40px_-8px_rgba(139,92,246,0.7)] transition-transform hover:scale-105 has-[>svg]:px-8"
             >
               <Link href="/register">
                 Comece agora

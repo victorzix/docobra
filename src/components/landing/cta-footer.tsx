@@ -66,10 +66,12 @@ export function CtaFooter() {
           </motion.p>
 
           <motion.div variants={ITEM}>
+            {/* has-[>svg]:px-9 pareia o has-[>svg]:px-4 do variant size="lg",
+                que senão vence a cascata por especificidade do :has(). */}
             <Button
               asChild
               size="lg"
-              className="marca-gradiente group mt-10 h-13 px-9 text-base font-semibold text-white shadow-[0_12px_44px_-8px_rgba(139,92,246,0.75)] transition-transform hover:scale-105"
+              className="marca-gradiente-escuro group mt-10 h-13 px-9 text-base font-semibold text-white shadow-[0_12px_44px_-8px_rgba(139,92,246,0.75)] transition-transform hover:scale-105 has-[>svg]:px-9"
             >
               <Link href="/register">
                 Comece agora
