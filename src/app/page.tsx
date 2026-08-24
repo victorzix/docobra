@@ -1,5 +1,6 @@
 import { getSessionUser } from "@/lib/auth/session";
 import { LandingHeader } from "@/components/landing/header";
+import { LandingMotionProvider } from "@/components/landing/motion-provider";
 import { Hero } from "@/components/landing/hero";
 import { ComoFunciona } from "@/components/landing/como-funciona";
 import { Planos } from "@/components/landing/planos";
@@ -12,11 +13,13 @@ export default async function Home() {
   return (
     <div className="flex min-h-screen flex-col">
       <LandingHeader logado={!!sessao} />
-      <Hero />
-      <ComoFunciona />
-      <Planos />
-      <Faq />
-      <CtaFooter />
+      <LandingMotionProvider>
+        <Hero />
+        <ComoFunciona />
+        <Planos />
+        <Faq />
+        <CtaFooter />
+      </LandingMotionProvider>
     </div>
   );
 }
