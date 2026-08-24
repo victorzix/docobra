@@ -62,7 +62,7 @@ export function Faq() {
           className="text-center"
         >
           <motion.div variants={ITEM} className="flex flex-col items-center">
-            <span className="bg-gradient-to-r from-cyan-600 via-violet-600 to-fuchsia-600 bg-clip-text font-mono text-xs font-semibold tracking-widest text-transparent uppercase">
+            <span className="bg-gradient-to-r from-cyan-700 via-violet-600 to-fuchsia-700 bg-clip-text font-mono text-xs font-semibold tracking-widest text-transparent uppercase">
               FAQ
             </span>
             <span className="marca-gradiente mt-2 h-0.5 w-16 rounded-full" />
@@ -91,12 +91,17 @@ export function Faq() {
               <motion.div
                 key={item.pergunta}
                 variants={ITEM}
-                className="group rounded-xl border border-border bg-card px-5 shadow-sm transition-all duration-300 hover:border-violet-400/60 hover:shadow-md"
+                className="rounded-xl border border-border bg-card px-5 shadow-sm transition-all duration-300 hover:border-violet-400/60 hover:shadow-md"
               >
                 <AccordionItem value={`item-${indice}`} className="border-b-0">
                   <AccordionTrigger className="gap-4 py-5 text-left text-base font-semibold hover:no-underline">
                     <span className="flex items-center gap-4">
-                      <span className="marca-gradiente flex size-8 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-bold text-white shadow-sm">
+                      {/* aria-hidden: é numeração decorativa e entraria no nome
+                          acessível do botão ("01, Meus dados...") sem isso. */}
+                      <span
+                        aria-hidden
+                        className="marca-gradiente-escuro flex size-8 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-bold text-white shadow-sm"
+                      >
                         {String(indice + 1).padStart(2, "0")}
                       </span>
                       {item.pergunta}
