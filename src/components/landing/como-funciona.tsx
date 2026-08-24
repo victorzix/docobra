@@ -63,7 +63,7 @@ export function ComoFunciona() {
           className="mx-auto max-w-2xl text-center"
         >
           <motion.div variants={ITEM_TEXTO} className="flex flex-col items-center">
-            <span className="bg-gradient-to-r from-cyan-600 via-violet-600 to-fuchsia-600 bg-clip-text font-mono text-xs font-semibold tracking-widest text-transparent uppercase">
+            <span className="bg-gradient-to-r from-cyan-700 via-violet-600 to-fuchsia-700 bg-clip-text font-mono text-xs font-semibold tracking-widest text-transparent uppercase">
               Como funciona
             </span>
             <span className="marca-gradiente mt-2 h-0.5 w-16 rounded-full" />
@@ -89,16 +89,31 @@ export function ComoFunciona() {
                 indice % 2 === 1 ? "md:[&>*:first-child]:order-2" : ""
               }`}
             >
-              <motion.div variants={ITEM_IMAGEM} className="group relative">
+              {/* O lift fica no wrapper (e não no card interno) pra levar o halo
+                  junto — senão o brilho descola e fica embaixo do card. */}
+              {/* transition-[translate] e não transition-transform: este último
+                  inclui `transform` na transition-property, e o framer-motion
+                  escreve `transform` inline a cada frame na entrada — a
+                  transição de 500ms interpolaria cada frame e empastelaria a
+                  animação. O lift usa só a propriedade `translate`. */}
+              <motion.div
+                variants={ITEM_IMAGEM}
+                className="group relative transition-[translate] duration-500 hover:-translate-y-2"
+              >
                 {/* Halo do gradiente de marca, revelado no hover. */}
                 <div
                   aria-hidden
                   className="marca-gradiente pointer-events-none absolute -inset-1 rounded-[1.25rem] opacity-0 blur-lg transition-opacity duration-500 group-hover:opacity-70"
                 />
 
-                <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-lg transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl">
-                  {/* Chrome de janela — dá cara de produto real em vez de print solto. */}
-                  <div className="flex items-center gap-3 border-b border-border bg-muted/60 px-4 py-3">
+                <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-lg transition-shadow duration-500 group-hover:shadow-2xl">
+                  {/* Chrome de janela — dá cara de produto real em vez de print
+                      solto. aria-hidden: a URL é falsa, decorativa, e um leitor
+                      de tela anunciaria como conteúdo real. */}
+                  <div
+                    aria-hidden
+                    className="flex items-center gap-3 border-b border-border bg-muted/60 px-4 py-3"
+                  >
                     <div className="flex items-center gap-1.5">
                       <span className="size-2.5 rounded-full bg-red-400/80" />
                       <span className="size-2.5 rounded-full bg-amber-400/80" />
@@ -121,7 +136,7 @@ export function ComoFunciona() {
               </motion.div>
 
               <motion.div variants={ITEM_TEXTO}>
-                <span className="bg-gradient-to-br from-cyan-500 via-violet-600 to-fuchsia-500 bg-clip-text font-mono text-5xl font-bold text-transparent">
+                <span className="bg-gradient-to-br from-cyan-700 via-violet-600 to-fuchsia-700 bg-clip-text font-mono text-5xl font-bold text-transparent">
                   {bloco.passo}
                 </span>
                 <h3 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
