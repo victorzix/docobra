@@ -14,7 +14,7 @@ export function LandingHeader({ logado }: { logado: boolean }) {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link
           href="/"
-          className="group flex items-center gap-2 font-mono text-lg font-semibold tracking-tight text-white"
+          className="flex items-center gap-2 font-mono text-lg font-semibold tracking-tight text-white"
         >
           <span className="marca-gradiente size-2.5 rounded-full shadow-[0_0_12px_rgba(168,85,247,0.8)]" />
           DocObra
@@ -38,7 +38,7 @@ export function LandingHeader({ logado }: { logado: boolean }) {
             <Button
               asChild
               size="sm"
-              className="marca-gradiente text-white shadow-lg shadow-violet-900/40 transition-transform hover:scale-[1.03]"
+              className="marca-gradiente-escuro text-white shadow-lg shadow-violet-900/40 transition-transform hover:scale-[1.03]"
             >
               <Link href="/dashboard">Ir pro dashboard</Link>
             </Button>
@@ -53,7 +53,7 @@ export function LandingHeader({ logado }: { logado: boolean }) {
               <Button
                 asChild
                 size="sm"
-                className="marca-gradiente text-white shadow-lg shadow-violet-900/40 transition-transform hover:scale-[1.03]"
+                className="marca-gradiente-escuro text-white shadow-lg shadow-violet-900/40 transition-transform hover:scale-[1.03]"
               >
                 <Link href="/register">Cadastre-se</Link>
               </Button>
