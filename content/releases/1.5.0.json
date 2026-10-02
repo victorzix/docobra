@@ -56,7 +56,7 @@
       },
       "image": {
         "url": "https://res.cloudinary.com/avedkz6b/image/upload/v1787317590/13-comunique-se-checklist-mobile.png",
-        "frame": "iphone",
+        "frame": "android",
         "alt": {
           "en": "Comunique-se checklist on mobile, with checked items shown with strikethrough",
           "pt": "Checklist do Comunique-se no mobile, com itens concluídos riscados",

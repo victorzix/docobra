@@ -1,0 +1,55 @@
+{
+  "releasedAt": "2026-10-02T12:00:00Z",
+  "title": {
+    "en": "Sales landing page: animated hero, product tour and a FAQ that answers real objections",
+    "pt": "Landing de vendas: hero animada, tour do produto e um FAQ que responde objeções de verdade",
+    "es": "Landing de ventas: hero animada, recorrido del producto y un FAQ que responde objeciones reales"
+  },
+  "notes": {
+    "en": "DocObra now has a public front door. The landing page opens with a scroll-driven isometric floor plan drawing itself, walks through both modules in a product tour, lays out the plans and answers the doubts an engineer or architect actually has before signing up.",
+    "pt": "O DocObra agora tem uma porta de entrada pública. A landing abre com uma planta isométrica que se desenha conforme o scroll, apresenta os dois módulos num tour do produto, mostra os planos e responde as dúvidas que um engenheiro ou arquiteto realmente tem antes de se cadastrar.",
+    "es": "DocObra ahora tiene una puerta de entrada pública. La landing abre con una planta isométrica que se dibuja con el scroll, presenta los dos módulos en un recorrido del producto, muestra los planes y responde las dudas que un ingeniero o arquitecto realmente tiene antes de registrarse."
+  },
+  "changes": [
+    {
+      "type": "added",
+      "text": {
+        "en": "Sales landing page at the app root: header with session-aware call to action, hero, product tour, plans, FAQ and final call to action",
+        "pt": "Landing de vendas na raiz do app: header com chamada que reconhece a sessão, hero, tour do produto, planos, FAQ e chamada final",
+        "es": "Landing de ventas en la raíz de la app: header con llamado a la acción que reconoce la sesión, hero, recorrido del producto, planes, FAQ y llamado final"
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "Hero with an isometric floor plan that draws itself as you scroll, surrounded by animated technical details: a memorial sheet being typed, a checklist ticking itself off, dimension lines and level marks",
+        "pt": "Hero com uma planta isométrica que se desenha conforme você rola a página, cercada de detalhes técnicos animados: uma folha de memorial sendo digitada, um checklist se marcando sozinho, cotas e marcas de nível",
+        "es": "Hero con una planta isométrica que se dibuja mientras haces scroll, rodeada de detalles técnicos animados: una hoja de memorial que se escribe, un checklist que se marca solo, cotas y marcas de nivel"
+      }
+    },
+    {
+      "type": "added",
+      "text": {
+        "en": "Product tour showing both modules in tilted browser mockups with high-resolution screenshots, over a dark brand-colored stage",
+        "pt": "Tour do produto mostrando os dois módulos em mockups de navegador inclinados, com screenshots em alta resolução, sobre um palco escuro nas cores da marca",
+        "es": "Recorrido del producto mostrando los dos módulos en mockups de navegador inclinados, con capturas en alta resolución, sobre un escenario oscuro con los colores de la marca"
+      }
+    },
+    {
+      "type": "changed",
+      "text": {
+        "en": "FAQ rewritten around real objections — can I file it as is, can the AI make things up, where do my files go, what if it fails midway — with answers taken from how the product actually behaves",
+        "pt": "FAQ reescrito em torno de objeções reais — posso protocolar direto, a IA pode inventar coisa, pra onde vão meus arquivos, e se der erro no meio — com respostas baseadas em como o produto de fato se comporta",
+        "es": "FAQ reescrito en torno a objeciones reales — puedo presentarlo tal cual, puede la IA inventar cosas, a dónde van mis archivos, qué pasa si falla a mitad de camino — con respuestas basadas en cómo se comporta realmente el producto"
+      }
+    },
+    {
+      "type": "fixed",
+      "text": {
+        "en": "Accessibility pass on the landing: animations respect reduced-motion preferences, text contrast on gradient surfaces, and decorative numbering hidden from screen readers",
+        "pt": "Passada de acessibilidade na landing: animações respeitam a preferência por menos movimento, contraste do texto sobre superfícies com gradiente, e numeração decorativa escondida de leitores de tela",
+        "es": "Pasada de accesibilidad en la landing: las animaciones respetan la preferencia de menos movimiento, contraste del texto sobre superficies con gradiente y numeración decorativa oculta a lectores de pantalla"
+      }
+    }
+  ]
+}
