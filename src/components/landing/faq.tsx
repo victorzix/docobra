@@ -11,27 +11,39 @@ import {
 
 const PERGUNTAS = [
   {
-    pergunta: "Meus dados de projeto ficam seguros?",
+    pergunta: "Posso protocolar direto o que o DocObra gerar?",
     resposta:
-      "Sim. Cada empresa só acessa os próprios projetos, e os documentos gerados ficam vinculados exclusivamente à sua conta.",
+      "O documento sai pronto e formatado em ABNT, mas a conferência final é sua. O DocObra redige; a responsabilidade técnica, a ART e a assinatura continuam com o profissional. Leia antes de protocolar.",
   },
   {
-    pergunta: "Que formato de PDF o Comunique-se aceita?",
+    pergunta: "A IA pode inventar informação da minha obra?",
     resposta:
-      "Qualquer PDF emitido pela prefeitura como Comunique-se, desde que tenha texto (não só uma imagem escaneada sem camada de texto).",
+      "O texto é montado a partir do que você preenche: tipo de construção, pavimentos, áreas e especificações. O DocObra organiza e redige, não cria dados do seu projeto. Se algum detalhe técnico ficou vago no formulário, revise esse trecho antes de enviar.",
   },
   {
-    pergunta: "Dá pra usar pelo celular?",
-    resposta: "Dá. O DocObra funciona direto no navegador do celular, sem precisar instalar nada.",
-  },
-  {
-    pergunta: "Preciso ter o PDF do Comunique-se em mãos pra usar o sistema?",
+    pergunta: "O que acontece com meus projetos, PDFs e áudios?",
     resposta:
-      "Só pro módulo de tradução de exigências. O Memorial Descritivo você gera do zero, direto no formulário.",
+      "Cada empresa só enxerga o que é seu, e os arquivos ficam vinculados à sua conta. Pra gerar o resultado, o texto e o áudio passam por provedores de IA externos (Google Gemini, com a Anthropic como reserva).",
   },
   {
-    pergunta: "Quanto tempo leva pra gerar um documento?",
-    resposta: "Poucos minutos — o formulário é curto e o processamento é automático.",
+    pergunta: "Prefiro falar do que digitar. Dá certo por áudio?",
+    resposta:
+      "Dá. Grave as especificações técnicas — fundação, estrutura, acabamentos — e o DocObra transcreve e monta o memorial. A gravação é feita direto no navegador, sem instalar nada.",
+  },
+  {
+    pergunta: "O PDF do Comunique-se tem algum limite?",
+    resposta:
+      "Até 10 MB, e o PDF precisa ter texto selecionável — um PDF escaneado como foto não é lido. Se a prefeitura anexou um modelo de documento dentro do PDF, você baixa ele direto na tela do checklist.",
+  },
+  {
+    pergunta: "E se der erro no meio do processo?",
+    resposta:
+      "O item fica na sua lista com o botão “Tentar novamente”. Você não precisa reenviar o PDF nem regravar o áudio.",
+  },
+  {
+    pergunta: "Dá pra usar na obra, pelo celular?",
+    resposta:
+      "Dá, direto no navegador. Grave o áudio na obra e finalize no escritório. O checklist também é editável: marque o que já resolveu, adicione e remova itens.",
   },
 ];
 

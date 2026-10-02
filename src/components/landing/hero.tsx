@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { HeroDecor } from "./hero-decor";
 import { ScrollScene } from "./scroll-scene";
 
 export function Hero() {
@@ -41,6 +42,8 @@ export function Hero() {
             transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", delay: 3 }}
           />
         </div>
+
+        <HeroDecor />
 
         <div className="relative z-10 mx-auto max-w-3xl px-6 text-center">
           <motion.div

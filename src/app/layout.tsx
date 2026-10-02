@@ -28,7 +28,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      {/* Extensões de navegador (ex.: ColorZilla) injetam atributos no body antes
+          da hidratação; o aviso é falso positivo. Só vale pros atributos do
+          próprio <body>, não dos filhos. */}
+      <body suppressHydrationWarning className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
       </body>
     </html>
