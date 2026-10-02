@@ -1,0 +1,23 @@
+{
+  "releasedAt": "2026-10-02T18:00:00Z",
+  "title": {
+    "en": "DocObra is live",
+    "pt": "DocObra no ar",
+    "es": "DocObra en línea"
+  },
+  "notes": {
+    "en": "The product is now reachable on its own domain, and the project page links straight to it.",
+    "pt": "O produto agora está acessível no domínio próprio, e a página do projeto aponta direto pra ele.",
+    "es": "El producto ya es accesible en su propio dominio, y la página del proyecto enlaza directamente a él."
+  },
+  "changes": [
+    {
+      "type": "added",
+      "text": {
+        "en": "DocObra is published at docobra.victoraphael.com, and the project page now links to the live app",
+        "pt": "O DocObra está publicado em docobra.victoraphael.com, e a página do projeto agora linka pro app no ar",
+        "es": "DocObra está publicado en docobra.victoraphael.com, y la página del proyecto ahora enlaza a la app en línea"
+      }
+    }
+  ]
+}
