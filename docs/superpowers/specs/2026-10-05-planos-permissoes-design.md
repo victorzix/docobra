@@ -67,8 +67,9 @@ automático em cartão, reembolso automático, escolha do gateway.
 
 **`verificarPermissao(empresa, chave)`** devolve `{ permitido, usado, restante,
 janela: { inicio, fim } }`. Ordem: sobrescrita ativa da empresa → plano do trecho
-vigente. Se o status derivado é `suspensa` ou `cancelada`, o plano efetivo é o
-`suspenso`, sem `if` espalhado pelo app.
+vigente. Se o status derivado é `suspensa`, o plano efetivo é o `suspenso`, sem
+`if` espalhado pelo app. Uma assinatura `cancelada` mantém o plano até `vence_em`
+e só então vira `suspensa` (→ plano `suspenso`).
 
 **Status derivado:** `ativa` / `carencia` / `suspensa` é calculado do vencimento e
 da data de agora, não gravado por job.
