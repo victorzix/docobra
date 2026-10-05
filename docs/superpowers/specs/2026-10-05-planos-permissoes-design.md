@@ -36,21 +36,20 @@ automático em cartão, reembolso automático, escolha do gateway.
 **Catálogo e vínculos**
 
 - `permissao`: `chave` única (`memorial.gerar`, `comunique-se.processar`,
-  `memorial.audio`, `projetos.criar`, `acervo.abrir`, `acervo.baixar`), `tipo`
+  `memorial.audio`, `projetos.criar`, `acervo.listar`, `acervo.abrir`, `acervo.baixar`), `tipo`
   (`booleana` | `limite`), `descricao`.
 - `plano`: `chave`, `nome`, `nivel`, `ciclo_dias` (30 | 360), `preco_centavos`,
   `ativo`, `interno`. Internos (`trial`, `suspenso`) não aparecem na landing. O
   `ciclo_dias` dos planos públicos é 30 ou 360; o `trial` usa a duração própria (ex.:
   14 dias), preço zero, e ao acabar sem assinatura a empresa cai no `suspenso`.
 - `plano_permissao`: plano, permissão, `valor`, `janela_dias`. Booleana não tem
-  valor nem janela.
+  valor nem janela. Para `tipo = limite`, `valor` nulo significa ilimitado; `valor` e `janela_dias` são ambos nulos ou ambos preenchidos.
 - `empresa_permissao`: empresa, permissão, `valor`, `janela_dias`, `inicio`,
   `expira_em?`, `motivo`.
 
 **Assinatura e cobrança**
 
-- `assinatura`: empresa, `inicio` (dia 0), `status` (`trial` | `ativa` | `carencia` |
-  `suspensa` | `cancelada`), vencimento do ciclo atual.
+- `assinatura`: empresa (uma por empresa), `inicio` (dia 0), `status` gravado (`trial` | `ativa` | `cancelada`), `vence_em`. `carencia` e `suspensa` não são gravados: são derivados de `vence_em` e da data de agora.
 - `assinatura_trecho`: assinatura, plano, `inicio`, `fim?` (nulo = vigente), `origem`
   (`autoatendimento` | `suporte`).
 - `cobranca`: assinatura, `tipo` (`ciclo` | `upgrade`), `valor_centavos`, status,
@@ -129,6 +128,8 @@ core/payments/
    renovação, landing com planos reais.
 
 Parar depois da Fase 2 para validar o limite; pagamento entra quando houver quem pague.
+
+`cobranca` e `evento_pagamento` entram só nas Fases 3 e 4.
 
 ## 5. Testes (Vitest)
 
