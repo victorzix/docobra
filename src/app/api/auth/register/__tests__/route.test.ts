@@ -1,7 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/db";
 import { empresa, usuario } from "@/db/schema";
 import { POST } from "@/app/api/auth/register/route";
+import { buscarAssinaturaVigente } from "@/db/queries/assinatura";
+import { semearCatalogoNoBancoDeTeste } from "@/db/__tests__/helpers/semear-catalogo";
 
 async function limparBanco() {
   await db.delete(usuario);
@@ -24,6 +26,7 @@ const payloadValido = {
 };
 
 describe("POST /api/auth/register", () => {
+  beforeAll(semearCatalogoNoBancoDeTeste);
   beforeEach(limparBanco);
   afterEach(limparBanco);
 
@@ -39,6 +42,16 @@ describe("POST /api/auth/register", () => {
 
     const usuarios = await db.select().from(usuario);
     expect(usuarios).toHaveLength(1);
+  });
+
+  it("cria uma assinatura de trial para a empresa nova", async () => {
+    await POST(criarRequest(payloadValido));
+
+    const [empresaCriada] = await db.select().from(empresa);
+    const vigente = await buscarAssinaturaVigente(empresaCriada.id);
+
+    expect(vigente?.planoChave).toBe("trial");
+    expect(vigente?.status).toBe("trial");
   });
 
   it("rejeita email duplicado com 409 e não cria segunda linha", async () => {

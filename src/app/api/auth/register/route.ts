@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { empresa, usuario } from "@/db/schema";
+import { criarAssinaturaTrial } from "@/db/queries/assinatura";
 import { hashSenha } from "@/lib/auth/password";
 import { assinarToken } from "@/lib/auth/jwt";
 import { SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS } from "@/lib/auth/constants";
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
     try {
       novoUsuario = await db.transaction(async (tx) => {
         const [novaEmpresa] = await tx.insert(empresa).values({ nome: nomeEmpresa }).returning();
+        await criarAssinaturaTrial(tx, novaEmpresa.id);
         const [criado] = await tx
           .insert(usuario)
           .values({ nome, email, senhaHash, empresaId: novaEmpresa.id, papel: "admin" })
