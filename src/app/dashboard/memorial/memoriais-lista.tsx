@@ -63,6 +63,9 @@ export function MemoriaisLista({ dadosIniciais }: MemoriaisListaProps) {
                   </span>
                 )}
               </CardDescription>
+              {retry.isError && retry.variables === m.id && (
+                <p className="text-destructive text-sm">{retry.error.message}</p>
+              )}
             </CardHeader>
           </Card>
         );
