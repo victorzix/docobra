@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { verificarToken } from "@/lib/auth/jwt";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import { contarProjetos, criarProjeto, listarProjetosPaginado } from "@/db/queries/projeto";
+import { registrarConsumo } from "@/db/queries/consumo";
+import { exigirPermissao } from "@/lib/permissoes/exigir-permissao";
 import { criarProjetoSchema } from "@/lib/validations/projeto/create.schema";
 import { listarProjetosQuerySchema } from "@/lib/validations/projeto/list.schema";
 import type { ProjetoResponse } from "@/lib/validations/projeto/response.schema";
@@ -65,7 +67,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const bloqueio = await exigirPermissao(sessao.empresaId, "projetos.criar");
+    if (bloqueio) return bloqueio;
+
     const projeto = await criarProjeto({ ...parsed.data, empresaId: sessao.empresaId });
+    await registrarConsumo(sessao.empresaId, "projetos.criar", projeto.id);
     return NextResponse.json({ projeto }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/projetos]", error);

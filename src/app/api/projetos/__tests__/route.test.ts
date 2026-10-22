@@ -1,8 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 
 import { db } from "@/db";
-import { empresa, projeto, usuario } from "@/db/schema";
+import { consumo, empresa, projeto, usuario } from "@/db/schema";
+import { criarAssinatura } from "@/db/queries/assinatura";
+import { semearCatalogoNoBancoDeTeste } from "@/db/__tests__/helpers/semear-catalogo";
 import { assinarToken } from "@/lib/auth/jwt";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import { GET, POST } from "@/app/api/projetos/route";
@@ -13,7 +15,7 @@ async function limparBanco() {
   await db.delete(empresa);
 }
 
-async function criarSessao() {
+async function criarSessao(planoChave = "escritorio") {
   const [novaEmpresa] = await db.insert(empresa).values({ nome: "Ancar Engenharia" }).returning();
   const [novoUsuario] = await db
     .insert(usuario)
@@ -24,6 +26,13 @@ async function criarSessao() {
       empresaId: novaEmpresa.id,
     })
     .returning();
+
+  await criarAssinatura(db, {
+    empresaId: novaEmpresa.id,
+    planoChave,
+    status: "ativa",
+    origem: "suporte",
+  });
 
   const token = await assinarToken({
     userId: novoUsuario.id,
@@ -50,6 +59,8 @@ function criarRequestGet(url: string, token?: string) {
     headers: token ? { Cookie: `${SESSION_COOKIE_NAME}=${token}` } : {},
   });
 }
+
+beforeAll(semearCatalogoNoBancoDeTeste);
 
 describe("POST /api/projetos", () => {
   beforeEach(limparBanco);
@@ -83,6 +94,41 @@ describe("POST /api/projetos", () => {
     const response = await POST(criarRequest({ nome: "Casa da Praia" }));
 
     expect(response.status).toBe(401);
+  });
+
+  it("bloqueia com 403 LIMITE_ATINGIDO quando a cota de projetos do plano acabou", async () => {
+    const { token } = await criarSessao("trial");
+
+    expect((await POST(criarRequest({ nome: "Projeto 1", endereco: "Rua A, 1" }, token))).status).toBe(201);
+    expect((await POST(criarRequest({ nome: "Projeto 2", endereco: "Rua A, 2" }, token))).status).toBe(201);
+    const terceira = await POST(criarRequest({ nome: "Projeto 3", endereco: "Rua A, 3" }, token));
+
+    expect(terceira.status).toBe(403);
+    const corpo = await terceira.json();
+    expect(corpo.codigo).toBe("LIMITE_ATINGIDO");
+    expect(corpo.permissao).toBe("projetos.criar");
+    expect(await db.select().from(projeto)).toHaveLength(2);
+  });
+
+  it("registra o consumo do projeto criado, com o id do projeto como referência", async () => {
+    const { token } = await criarSessao();
+
+    const response = await POST(criarRequest({ nome: "Casa", endereco: "Rua X, 1" }, token));
+    const { projeto: criado } = await response.json();
+
+    const consumos = await db.select().from(consumo);
+    expect(consumos).toHaveLength(1);
+    expect(consumos[0].referencia).toBe(criado.id);
+  });
+
+  it("dados inválidos continuam 400 mesmo com a cota esgotada", async () => {
+    const { token } = await criarSessao("trial");
+    await POST(criarRequest({ nome: "Projeto 1", endereco: "Rua A, 1" }, token));
+    await POST(criarRequest({ nome: "Projeto 2", endereco: "Rua A, 2" }, token));
+
+    const response = await POST(criarRequest({}, token));
+
+    expect(response.status).toBe(400);
   });
 });
 
