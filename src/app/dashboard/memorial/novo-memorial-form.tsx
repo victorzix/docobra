@@ -50,9 +50,10 @@ interface NovoMemorialFormProps {
   projetos: Projeto[];
   onSuccess: () => void;
   onPendingChange?: (pending: boolean) => void;
+  audioPermitido?: boolean;
 }
 
-export function NovoMemorialForm({ projetos, onSuccess, onPendingChange }: NovoMemorialFormProps) {
+export function NovoMemorialForm({ projetos, onSuccess, onPendingChange, audioPermitido = true }: NovoMemorialFormProps) {
   const [modo, setModo] = useState<"texto" | "audio">("texto");
   const [audio, setAudio] = useState<{ base64: string; mimeType: string } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -193,10 +194,16 @@ export function NovoMemorialForm({ projetos, onSuccess, onPendingChange }: NovoM
           <Button type="button" variant={modo === "texto" ? "default" : "outline"} onClick={() => setModo("texto")}>
             Digitar
           </Button>
-          <Button type="button" variant={modo === "audio" ? "default" : "outline"} onClick={() => setModo("audio")}>
+          <Button
+            type="button"
+            variant={modo === "audio" ? "default" : "outline"}
+            disabled={!audioPermitido}
+            onClick={() => setModo("audio")}
+          >
             Gravar áudio
           </Button>
         </div>
+        {!audioPermitido && <p className="text-xs text-muted-foreground">Seu plano não inclui o memorial por áudio.</p>}
 
         {modo === "texto" ? (
           <div className="grid gap-4">

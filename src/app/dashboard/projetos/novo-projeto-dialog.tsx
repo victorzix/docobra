@@ -10,6 +10,8 @@ import {
   type CriarProjetoInput,
 } from "@/lib/validations/projeto/create.schema";
 import { useCriarProjeto } from "@/hooks/use-criar-projeto";
+import { usePermissaoDeUso } from "@/hooks/use-permissoes";
+import type { PermissoesDaEmpresa } from "@/lib/permissoes/permissoes-da-empresa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,10 +30,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-export function NovoProjetoDialog() {
+interface NovoProjetoDialogProps {
+  permissoesIniciais?: PermissoesDaEmpresa;
+}
+
+export function NovoProjetoDialog({ permissoesIniciais }: NovoProjetoDialogProps) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const criar = useCriarProjeto();
+  const permissao = usePermissaoDeUso("projetos.criar", permissoesIniciais);
 
   const form = useForm<CriarProjetoInput>({
     resolver: zodResolver(criarProjetoSchema),
@@ -51,7 +58,7 @@ export function NovoProjetoDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Novo projeto</Button>
+        <Button disabled={permissao ? !permissao.permitido : false}>Novo projeto</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

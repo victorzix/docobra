@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { FolderKanban } from "lucide-react";
 
 import { getSessionUser } from "@/lib/auth/session";
+import { UsoDoModulo } from "@/components/common/uso-do-modulo";
+import { carregarContextoDePlanos } from "@/lib/permissoes/contexto-de-planos";
 import { contarProjetos, listarProjetosPaginado } from "@/db/queries/projeto";
 import { NovoProjetoDialog } from "./novo-projeto-dialog";
 import { ProjetosGrid } from "./projetos-grid";
@@ -12,6 +14,7 @@ export const metadata: Metadata = {
 
 export default async function ProjetosPage() {
   const sessao = await getSessionUser();
+  const contexto = sessao ? await carregarContextoDePlanos(sessao) : null;
 
   const [pagina, total] = sessao
     ? await Promise.all([listarProjetosPaginado(sessao.empresaId), contarProjetos(sessao.empresaId)])
@@ -19,14 +22,24 @@ export default async function ProjetosPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Projetos</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {total === 0 ? "Nenhum projeto ainda." : `${total} ${total === 1 ? "projeto" : "projetos"}`}
           </p>
         </div>
-        <NovoProjetoDialog />
+        <div className="flex items-center gap-4">
+          {contexto && (
+            <UsoDoModulo
+              chave="projetos.criar"
+              unidade="projetos"
+              permissoesIniciais={contexto.permissoes}
+              contatoSuporte={contexto.contatoSuporte}
+            />
+          )}
+          <NovoProjetoDialog permissoesIniciais={contexto?.permissoes} />
+        </div>
       </div>
 
       {total === 0 ? (
@@ -40,7 +53,7 @@ export default async function ProjetosPage() {
               Crie o primeiro projeto pra começar a gerar memoriais e checklists.
             </p>
           </div>
-          <NovoProjetoDialog />
+          <NovoProjetoDialog permissoesIniciais={contexto?.permissoes} />
         </div>
       ) : (
         <ProjetosGrid
