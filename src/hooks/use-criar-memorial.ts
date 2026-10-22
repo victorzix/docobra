@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import type { CriarMemorialInput } from "@/lib/validations/memorial/create.schema";
 import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
@@ -34,5 +34,10 @@ async function criarMemorialRequest(input: CriarMemorialInput): Promise<Memorial
 }
 
 export function useCriarMemorial() {
-  return useMutation({ mutationFn: criarMemorialRequest });
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: criarMemorialRequest,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["permissoes"] }),
+  });
 }

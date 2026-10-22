@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import { getSessionUser } from "@/lib/auth/session";
+import { UsoDoModulo } from "@/components/common/uso-do-modulo";
+import { carregarContextoDePlanos } from "@/lib/permissoes/contexto-de-planos";
 import { listarComuniqueSe } from "@/db/queries/comunique-se";
 import { listarProjetos } from "@/db/queries/projeto";
 import type { PaginatedResponse } from "@/lib/pagination";
@@ -14,6 +16,7 @@ export const metadata: Metadata = {
 
 export default async function ComuniqueSePage() {
   const sessao = await getSessionUser();
+  const contexto = sessao ? await carregarContextoDePlanos(sessao) : null;
   const [lista, projetos] = sessao
     ? await Promise.all([listarComuniqueSe(sessao.empresaId), listarProjetos(sessao.empresaId)])
     : [[], []];
@@ -33,9 +36,19 @@ export default async function ComuniqueSePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Comunique-se</h1>
-        <NovoComuniqueSeDrawer projetos={projetos} />
+        <div className="flex items-center gap-4">
+          {contexto && (
+            <UsoDoModulo
+              chave="comunique-se.processar"
+              unidade="processamentos por IA"
+              permissoesIniciais={contexto.permissoes}
+              contatoSuporte={contexto.contatoSuporte}
+            />
+          )}
+          <NovoComuniqueSeDrawer projetos={projetos} />
+        </div>
       </div>
       <ComuniqueSeLista dadosIniciais={dadosIniciais} />
     </div>

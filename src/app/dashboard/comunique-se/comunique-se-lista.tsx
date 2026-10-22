@@ -66,6 +66,9 @@ export function ComuniqueSeLista({ dadosIniciais }: ComuniqueSeListaProps) {
                   "Processando..."
                 )}
               </CardDescription>
+              {retry.isError && retry.variables === item.id && (
+                <p className="text-destructive text-sm">{retry.error.message}</p>
+              )}
             </CardHeader>
           </Card>
         );

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import { getSessionUser } from "@/lib/auth/session";
+import { UsoDoModulo } from "@/components/common/uso-do-modulo";
+import { carregarContextoDePlanos } from "@/lib/permissoes/contexto-de-planos";
 import { listarMemoriais } from "@/db/queries/memorial";
 import { listarProjetos } from "@/db/queries/projeto";
 import type { PaginatedResponse } from "@/lib/pagination";
@@ -14,6 +16,7 @@ export const metadata: Metadata = {
 
 export default async function MemorialListaPage() {
   const sessao = await getSessionUser();
+  const contexto = sessao ? await carregarContextoDePlanos(sessao) : null;
   const [memoriais, projetos] = sessao
     ? await Promise.all([listarMemoriais(sessao.empresaId), listarProjetos(sessao.empresaId)])
     : [[], []];
@@ -33,9 +36,19 @@ export default async function MemorialListaPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Memorial Descritivo</h1>
-        <NovoMemorialDrawer projetos={projetos} />
+        <div className="flex items-center gap-4">
+          {contexto && (
+            <UsoDoModulo
+              chave="memorial.gerar"
+              unidade="documentos"
+              permissoesIniciais={contexto.permissoes}
+              contatoSuporte={contexto.contatoSuporte}
+            />
+          )}
+          <NovoMemorialDrawer projetos={projetos} permissoesIniciais={contexto?.permissoes} />
+        </div>
       </div>
       <MemoriaisLista dadosIniciais={dadosIniciais} />
     </div>

@@ -11,7 +11,12 @@ import {
   plano,
   planoPermissao,
 } from "@/db/schema";
-import { preencherAssinaturasExistentes, semearPlanos } from "../../../scripts/seed-planos.mjs";
+import {
+  criarAssinaturaInicial,
+  lerOpcoes,
+  preencherAssinaturasExistentes,
+  semearPlanos,
+} from "../../../scripts/seed-planos.mjs";
 
 const PLANOS = ["trial", "suspenso", "essencial", "escritorio"];
 
@@ -97,5 +102,68 @@ describe("preencherAssinaturasExistentes", () => {
     expect(trecho).toEqual({ chave: "escritorio", origem: "suporte", fim: null });
 
     expect(await preencherAssinaturasExistentes(client, { agora })).toBe(0);
+  });
+});
+
+describe("lerOpcoes", () => {
+  it("por padrão não preenche empresas existentes e usa o plano escritorio", () => {
+    expect(lerOpcoes([])).toEqual({ planoChave: "escritorio", preencherExistentes: false });
+  });
+
+  it("lê --preencher-existentes e --plano", () => {
+    expect(lerOpcoes(["--preencher-existentes", "--plano=essencial"])).toEqual({
+      planoChave: "essencial",
+      preencherExistentes: true,
+    });
+  });
+});
+
+describe("criarAssinaturaInicial", () => {
+  it("devolve false e não duplica quando a empresa já tem assinatura", async () => {
+    await semearPlanos(client);
+    const [nova] = await db.insert(empresa).values({ nome: "Com Assinatura" }).returning();
+
+    expect(await criarAssinaturaInicial(client, { empresaId: nova.id })).toBe(true);
+    expect(await criarAssinaturaInicial(client, { empresaId: nova.id })).toBe(false);
+
+    const assinaturas = await db.select().from(assinatura).where(eq(assinatura.empresaId, nova.id));
+    expect(assinaturas).toHaveLength(1);
+    const trechos = await db
+      .select()
+      .from(assinaturaTrecho)
+      .where(eq(assinaturaTrecho.assinaturaId, assinaturas[0].id));
+    expect(trechos).toHaveLength(1);
+  });
+
+  it("lança erro claro quando o plano não existe", async () => {
+    const [nova] = await db.insert(empresa).values({ nome: "Sem Plano" }).returning();
+
+    await expect(
+      criarAssinaturaInicial(client, { empresaId: nova.id, planoChave: "nao-existe" }),
+    ).rejects.toThrow('Plano "nao-existe" não encontrado');
+  });
+});
+
+describe("preencherAssinaturasExistentes (concorrência)", () => {
+  it("duas execuções simultâneas não quebram nem duplicam", async () => {
+    await semearPlanos(client);
+    await db
+      .insert(empresa)
+      .values([{ nome: "A" }, { nome: "B" }, { nome: "C" }, { nome: "D" }, { nome: "E" }]);
+    const outro = new Client({ connectionString: process.env.DATABASE_URL });
+    await outro.connect();
+
+    try {
+      const [a, b] = await Promise.all([
+        preencherAssinaturasExistentes(client),
+        preencherAssinaturasExistentes(outro),
+      ]);
+      expect(a + b).toBe(5);
+    } finally {
+      await outro.end();
+    }
+
+    expect(await db.select().from(assinatura)).toHaveLength(5);
+    expect(await db.select().from(assinaturaTrecho)).toHaveLength(5);
   });
 });

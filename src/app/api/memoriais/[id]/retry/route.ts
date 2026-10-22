@@ -5,6 +5,8 @@ import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import { buscarMemorialDaEmpresa } from "@/db/queries/memorial";
 import { buscarProjetoDaEmpresa } from "@/db/queries/projeto";
 import { buscarNomesUsuarioEEmpresa } from "@/db/queries/usuario";
+import { registrarConsumo } from "@/db/queries/consumo";
+import { exigirPermissao } from "@/lib/permissoes/exigir-permissao";
 import { regerarMemorial, type RespostasParaGeracao } from "@/lib/memorial/gerar";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -39,6 +41,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       especificacoes?: RespostasParaGeracao["especificacoes"];
     };
 
+    const bloqueio = await exigirPermissao(sessao.empresaId, "memorial.gerar");
+    if (bloqueio) return bloqueio;
+
     const nomes = await buscarNomesUsuarioEEmpresa(sessao.userId);
     const resultado = await regerarMemorial(
       memorial.id,
@@ -59,6 +64,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
     );
 
+    await registrarConsumo(sessao.empresaId, "memorial.gerar", resultado.id);
     return NextResponse.json({ memorial: resultado });
   } catch (error) {
     console.error("[POST /api/memoriais/[id]/retry]", error);

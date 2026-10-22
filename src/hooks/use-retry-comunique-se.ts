@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface RetryResponse {
   comuniqueSe: { id: string; numero: number; status: string; pdfOriginalUrl: string | null };
@@ -20,5 +20,10 @@ async function retryComuniqueSeRequest(id: string): Promise<RetryResponse> {
 }
 
 export function useRetryComuniqueSe() {
-  return useMutation({ mutationFn: retryComuniqueSeRequest });
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: retryComuniqueSeRequest,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["permissoes"] }),
+  });
 }

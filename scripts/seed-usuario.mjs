@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
- * Cria uma empresa + usuário base para login manual em dev, sem passar pela
- * tela de registro. Idempotente: se o email já existir, só informa e sai —
- * não duplica nem sobrescreve.
+ * Cria uma empresa + usuário base (com assinatura do plano escritorio) para
+ * login manual em dev, sem passar pela tela de registro. Idempotente: se o
+ * email já existir, só informa e sai — não duplica nem sobrescreve.
+ *
+ * Precisa que os planos já tenham sido semeados (scripts/seed-planos.mjs).
  *
  * Uso:
  *   node scripts/seed-usuario.mjs
@@ -16,8 +18,11 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { Client } from "pg";
 import bcrypt from "bcryptjs";
+
+import { criarAssinaturaInicial } from "./seed-planos.mjs";
 
 const ROOT = process.cwd();
 const SALT_ROUNDS = 12; // mesmo valor de src/lib/auth/password.ts
@@ -41,6 +46,34 @@ async function readEnvFile() {
     if (match) out[match[1]] = match[2].trim().replace(/^["']|["']$/g, "");
   }
   return out;
+}
+
+export async function criarUsuarioComEmpresa(client, { nome, email, senha, nomeEmpresa }) {
+  const senhaHash = await bcrypt.hash(senha, SALT_ROUNDS);
+
+  await client.query("BEGIN");
+  try {
+    const { rows: empresaRows } = await client.query(
+      "INSERT INTO empresa (nome) VALUES ($1) RETURNING id",
+      [nomeEmpresa],
+    );
+    const empresaId = empresaRows[0].id;
+
+    const { rows: usuarioRows } = await client.query(
+      `INSERT INTO usuario (nome, email, senha_hash, empresa_id, papel)
+       VALUES ($1, $2, $3, $4, 'admin')
+       RETURNING id`,
+      [nome, email, senhaHash, empresaId],
+    );
+
+    await criarAssinaturaInicial(client, { empresaId });
+
+    await client.query("COMMIT");
+    return { empresaId, usuarioId: usuarioRows[0].id };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  }
 }
 
 async function main() {
@@ -68,40 +101,26 @@ async function main() {
       return;
     }
 
-    const senhaHash = await bcrypt.hash(senha, SALT_ROUNDS);
+    const { empresaId, usuarioId } = await criarUsuarioComEmpresa(client, {
+      nome,
+      email,
+      senha,
+      nomeEmpresa,
+    });
 
-    await client.query("BEGIN");
-    try {
-      const { rows: empresaRows } = await client.query(
-        "INSERT INTO empresa (nome) VALUES ($1) RETURNING id",
-        [nomeEmpresa],
-      );
-      const empresaId = empresaRows[0].id;
-
-      const { rows: usuarioRows } = await client.query(
-        `INSERT INTO usuario (nome, email, senha_hash, empresa_id, papel)
-         VALUES ($1, $2, $3, $4, 'admin')
-         RETURNING id`,
-        [nome, email, senhaHash, empresaId],
-      );
-
-      await client.query("COMMIT");
-
-      console.log("Usuário criado com sucesso:");
-      console.log(`  empresa: ${nomeEmpresa} (${empresaId})`);
-      console.log(`  usuario: ${nome} (${usuarioRows[0].id})`);
-      console.log(`  email:   ${email}`);
-      console.log(`  senha:   ${senha}`);
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    }
+    console.log("Usuário criado com sucesso:");
+    console.log(`  empresa: ${nomeEmpresa} (${empresaId})`);
+    console.log(`  usuario: ${nome} (${usuarioId})`);
+    console.log(`  email:   ${email}`);
+    console.log(`  senha:   ${senha}`);
   } finally {
     await client.end();
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

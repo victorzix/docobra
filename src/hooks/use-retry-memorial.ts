@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface RetryResponse {
   memorial: { id: string; numero: number; status: string; documentoGeradoUrl: string | null };
@@ -20,5 +20,10 @@ async function retryMemorialRequest(id: string): Promise<RetryResponse> {
 }
 
 export function useRetryMemorial() {
-  return useMutation({ mutationFn: retryMemorialRequest });
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: retryMemorialRequest,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["permissoes"] }),
+  });
 }

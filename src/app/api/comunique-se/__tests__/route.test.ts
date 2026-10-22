@@ -1,8 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 import { db } from "@/db";
-import { comuniqueSe, empresa, projeto, usuario } from "@/db/schema";
+import { comuniqueSe, consumo, empresa, projeto, usuario } from "@/db/schema";
+import { criarAssinatura } from "@/db/queries/assinatura";
+import { registrarConsumo } from "@/db/queries/consumo";
+import { semearCatalogoNoBancoDeTeste } from "@/db/__tests__/helpers/semear-catalogo";
 import { assinarToken } from "@/lib/auth/jwt";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
@@ -12,6 +15,11 @@ vi.mock("@/lib/comunique-se/processar", () => ({
   criarComuniqueSeManual: vi.fn(),
 }));
 
+vi.mock("@/lib/comunique-se/modelo-detectar", () => ({
+  detectarModeloEmbutido: vi.fn(),
+}));
+
+import { detectarModeloEmbutido } from "@/lib/comunique-se/modelo-detectar";
 import { criarComuniqueSeManual, processarComuniqueSe } from "@/lib/comunique-se/processar";
 import { GET, POST } from "@/app/api/comunique-se/route";
 
@@ -22,7 +30,7 @@ async function limparBanco() {
   await db.delete(empresa);
 }
 
-async function criarSessaoComProjeto() {
+async function criarSessaoComProjeto(planoChave = "escritorio") {
   const [novaEmpresa] = await db.insert(empresa).values({ nome: "Ancar Engenharia" }).returning();
   const [novoUsuario] = await db
     .insert(usuario)
@@ -32,8 +40,15 @@ async function criarSessaoComProjeto() {
     .insert(projeto)
     .values({ nome: "Casa da Praia", empresaId: novaEmpresa.id })
     .returning();
+  await criarAssinatura(db, { empresaId: novaEmpresa.id, planoChave, status: "ativa", origem: "suporte" });
   const token = await assinarToken({ userId: novoUsuario.id, empresaId: novaEmpresa.id, papel: novoUsuario.papel });
-  return { token, projetoId: novoProjeto.id };
+  return { token, projetoId: novoProjeto.id, empresaId: novaEmpresa.id };
+}
+
+async function esgotarCota(empresaId: string) {
+  for (const referencia of ["a", "b", "c"]) {
+    await registrarConsumo(empresaId, "comunique-se.processar", referencia);
+  }
 }
 
 function criarRequestPost(body: unknown, token?: string) {
@@ -56,10 +71,12 @@ function criarRequestGet(token?: string) {
 const PDF_BASE64_FAKE = Buffer.from("%PDF-1.4 fake").toString("base64");
 
 describe("POST /api/comunique-se", () => {
+  beforeAll(semearCatalogoNoBancoDeTeste);
   beforeEach(async () => {
     await limparBanco();
     vi.mocked(processarComuniqueSe).mockReset();
     vi.mocked(criarComuniqueSeManual).mockReset();
+    vi.mocked(detectarModeloEmbutido).mockReset();
   });
   afterEach(limparBanco);
 
@@ -202,9 +219,90 @@ describe("POST /api/comunique-se", () => {
     expect(response.status).toBe(404);
     expect(criarComuniqueSeManual).not.toHaveBeenCalled();
   });
+
+  it("PDF: bloqueia com 403 LIMITE_ATINGIDO e não processa quando a cota acabou", async () => {
+    const { token, projetoId, empresaId } = await criarSessaoComProjeto("trial");
+    await esgotarCota(empresaId);
+
+    const response = await POST(
+      criarRequestPost({ modoCriacao: "pdf", projetoId, pdfBase64: PDF_BASE64_FAKE }, token),
+    );
+
+    expect(response.status).toBe(403);
+    const corpo = await response.json();
+    expect(corpo.codigo).toBe("LIMITE_ATINGIDO");
+    expect(corpo.permissao).toBe("comunique-se.processar");
+    expect(processarComuniqueSe).not.toHaveBeenCalled();
+  });
+
+  it("PDF: registra o consumo com o id do Comunique-se processado", async () => {
+    const { token, projetoId } = await criarSessaoComProjeto();
+    vi.mocked(processarComuniqueSe).mockResolvedValue({
+      id: "cs-123",
+      numero: 1,
+      status: "pronto",
+      pdfOriginalUrl: "/api/comunique-se/cs-123/pdf",
+    });
+
+    const response = await POST(
+      criarRequestPost({ modoCriacao: "pdf", projetoId, pdfBase64: PDF_BASE64_FAKE }, token),
+    );
+
+    expect(response.status).toBe(201);
+    const consumos = await db.select().from(consumo);
+    expect(consumos).toHaveLength(1);
+    expect(consumos[0].referencia).toBe("cs-123");
+  });
+
+  it("PDF: não consome quando o processamento falha", async () => {
+    const { token, projetoId } = await criarSessaoComProjeto();
+    vi.mocked(processarComuniqueSe).mockRejectedValue(new CriacaoParcialError("falhou", "cs-123"));
+
+    await POST(criarRequestPost({ modoCriacao: "pdf", projetoId, pdfBase64: PDF_BASE64_FAKE }, token));
+
+    expect(await db.select().from(consumo)).toHaveLength(0);
+  });
+
+  it("PDF com modelo embutido (exportado pelo DocObra) não checa nem consome, mesmo com a cota esgotada", async () => {
+    const { token, projetoId, empresaId } = await criarSessaoComProjeto("trial");
+    await esgotarCota(empresaId);
+    vi.mocked(detectarModeloEmbutido).mockResolvedValue([{ descricao: "Apresentar ART", concluida: false }]);
+    vi.mocked(processarComuniqueSe).mockResolvedValue({
+      id: "cs-importado",
+      numero: 1,
+      status: "pronto",
+      pdfOriginalUrl: "/api/comunique-se/cs-importado/pdf",
+    });
+
+    const response = await POST(
+      criarRequestPost({ modoCriacao: "pdf", projetoId, pdfBase64: PDF_BASE64_FAKE }, token),
+    );
+
+    expect(response.status).toBe(201);
+    expect(await db.select().from(consumo)).toHaveLength(3);
+  });
+
+  it("modo manual não checa nem consome, mesmo com a cota esgotada", async () => {
+    const { token, projetoId, empresaId } = await criarSessaoComProjeto("trial");
+    await esgotarCota(empresaId);
+    vi.mocked(criarComuniqueSeManual).mockResolvedValue({
+      id: "cs-manual",
+      numero: 1,
+      status: "pronto",
+      pdfOriginalUrl: null,
+    });
+
+    const response = await POST(
+      criarRequestPost({ modoCriacao: "manual", projetoId, itens: [{ descricao: "Apresentar ART" }] }, token),
+    );
+
+    expect(response.status).toBe(201);
+    expect(await db.select().from(consumo)).toHaveLength(3);
+  });
 });
 
 describe("GET /api/comunique-se", () => {
+  beforeAll(semearCatalogoNoBancoDeTeste);
   beforeEach(limparBanco);
   afterEach(limparBanco);
 

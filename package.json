@@ -16,7 +16,8 @@
     "release": "commit-and-tag-version",
     "release:publish": "node scripts/publish-releases.mjs",
     "seed:usuario": "node scripts/seed-usuario.mjs",
-    "seed:planos": "node scripts/seed-planos.mjs"
+    "seed:planos": "node scripts/seed-planos.mjs",
+    "admin:plano": "node scripts/admin-plano.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

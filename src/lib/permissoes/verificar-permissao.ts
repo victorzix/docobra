@@ -19,6 +19,10 @@ export interface ResultadoPermissao {
   janela: Janela | null;
 }
 
+export interface OpcoesVerificacao {
+  suspensaoAtiva?: boolean;
+}
+
 const NEGADA: ResultadoPermissao = {
   permitido: false,
   limite: null,
@@ -33,10 +37,16 @@ interface Concessao {
   ancora: Date;
 }
 
+// Sem pagamento ainda (Fase 4), a suspensão por data fica desligada: só as cotas valem.
+function suspensaoLigada(opcoes: OpcoesVerificacao): boolean {
+  return opcoes.suspensaoAtiva ?? process.env.ASSINATURA_SUSPENSAO_ATIVA === "true";
+}
+
 async function resolverConcessao(
   empresaId: string,
   permissaoId: string,
   agora: Date,
+  suspensaoAtiva: boolean,
 ): Promise<Concessao | null> {
   const sobrescrita = await buscarSobrescrita(empresaId, permissaoId, agora);
   if (sobrescrita) {
@@ -47,7 +57,7 @@ async function resolverConcessao(
   if (!assinatura) return null;
 
   let planoId = assinatura.planoId;
-  if (derivarStatus(assinatura, agora) === "suspensa") {
+  if (suspensaoAtiva && derivarStatus(assinatura, agora) === "suspensa") {
     const suspenso = await buscarPlanoPorChave(PLANO_SUSPENSO);
     if (!suspenso) {
       throw new Error(`Plano "${PLANO_SUSPENSO}" não encontrado. Rode "node scripts/seed-planos.mjs".`);
@@ -65,11 +75,12 @@ export async function verificarPermissao(
   empresaId: string,
   chave: string,
   agora: Date = new Date(),
+  opcoes: OpcoesVerificacao = {},
 ): Promise<ResultadoPermissao> {
   const permissao = await buscarPermissaoPorChave(chave);
   if (!permissao) throw new Error(`Permissão desconhecida: "${chave}".`);
 
-  const concessao = await resolverConcessao(empresaId, permissao.id, agora);
+  const concessao = await resolverConcessao(empresaId, permissao.id, agora, suspensaoLigada(opcoes));
   if (!concessao) return NEGADA;
 
   if (concessao.valor === null || concessao.janelaDias === null) {
