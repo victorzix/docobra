@@ -1,8 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { empresa, memorialDescritivo, projeto, usuario } from "@/db/schema";
+import { criarAssinatura } from "@/db/queries/assinatura";
+import { registrarConsumo } from "@/db/queries/consumo";
+import { criarMemorialRascunho } from "@/db/queries/memorial";
+import { consumo, empresa, memorialDescritivo, projeto, usuario } from "@/db/schema";
+import { semearCatalogoNoBancoDeTeste } from "@/db/__tests__/helpers/semear-catalogo";
 import { assinarToken } from "@/lib/auth/jwt";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 
@@ -15,12 +20,12 @@ import { POST } from "@/app/api/memoriais/[id]/retry/route";
 
 async function limparBanco() {
   await db.delete(memorialDescritivo);
-  await db.delete(usuario);
   await db.delete(projeto);
+  await db.delete(usuario);
   await db.delete(empresa);
 }
 
-async function criarSessaoComRascunho(status: "rascunho" | "gerado" = "rascunho") {
+async function criarMemorialPendente(planoChave: string) {
   const [novaEmpresa] = await db.insert(empresa).values({ nome: "Ancar Engenharia" }).returning();
   const [novoUsuario] = await db
     .insert(usuario)
@@ -30,27 +35,25 @@ async function criarSessaoComRascunho(status: "rascunho" | "gerado" = "rascunho"
     .insert(projeto)
     .values({ nome: "Casa da Praia", empresaId: novaEmpresa.id })
     .returning();
-  const [rascunho] = await db
-    .insert(memorialDescritivo)
-    .values({
-      projetoId: novoProjeto.id,
-      numero: 1,
-      status,
-      respostasFormularioJson: { tipoConstrucao: "residencial", especificacoes: {} },
-    })
-    .returning();
+  await criarAssinatura(db, { empresaId: novaEmpresa.id, planoChave, status: "ativa", origem: "suporte" });
+  const memorial = await criarMemorialRascunho({
+    projetoId: novoProjeto.id,
+    empresaId: novaEmpresa.id,
+    respostasFormularioJson: { tipoConstrucao: "residencial" },
+  });
   const token = await assinarToken({ userId: novoUsuario.id, empresaId: novaEmpresa.id, papel: novoUsuario.papel });
-  return { token, memorialId: rascunho.id };
+  return { token, memorialId: memorial.id, empresaId: novaEmpresa.id };
 }
 
-function criarRequest(token?: string) {
-  return new NextRequest("http://localhost/api/memoriais/x/retry", {
+function criarRequest(id: string, token: string) {
+  return new NextRequest(`http://localhost/api/memoriais/${id}/retry`, {
     method: "POST",
-    headers: token ? { Cookie: `${SESSION_COOKIE_NAME}=${token}` } : {},
+    headers: { Cookie: `${SESSION_COOKIE_NAME}=${token}` },
   });
 }
 
 describe("POST /api/memoriais/[id]/retry", () => {
+  beforeAll(semearCatalogoNoBancoDeTeste);
   beforeEach(async () => {
     await limparBanco();
     vi.mocked(regerarMemorial).mockReset();
@@ -58,31 +61,46 @@ describe("POST /api/memoriais/[id]/retry", () => {
   afterEach(limparBanco);
 
   it("rejeita sem sessão com 401", async () => {
-    const response = await POST(criarRequest(), { params: Promise.resolve({ id: "x" }) });
+    const response = await POST(new NextRequest("http://localhost/api/memoriais/x/retry", { method: "POST" }), {
+      params: Promise.resolve({ id: "x" }),
+    });
     expect(response.status).toBe(401);
   });
 
   it("retorna 404 pra memorial inexistente", async () => {
-    const { token } = await criarSessaoComRascunho();
+    const { token } = await criarMemorialPendente("escritorio");
+    const id = "00000000-0000-0000-0000-000000000000";
 
-    const response = await POST(criarRequest(token), {
-      params: Promise.resolve({ id: "00000000-0000-0000-0000-000000000000" }),
-    });
+    const response = await POST(criarRequest(id, token), { params: Promise.resolve({ id }) });
 
     expect(response.status).toBe(404);
   });
 
   it("rejeita memorial já gerado com 400", async () => {
-    const { token, memorialId } = await criarSessaoComRascunho("gerado");
+    const { token, memorialId } = await criarMemorialPendente("escritorio");
+    await db.update(memorialDescritivo).set({ status: "gerado" }).where(eq(memorialDescritivo.id, memorialId));
 
-    const response = await POST(criarRequest(token), { params: Promise.resolve({ id: memorialId }) });
+    const response = await POST(criarRequest(memorialId, token), { params: Promise.resolve({ id: memorialId }) });
 
     expect(response.status).toBe(400);
     expect(regerarMemorial).not.toHaveBeenCalled();
   });
 
-  it("chama regerarMemorial e retorna 200 no sucesso", async () => {
-    const { token, memorialId } = await criarSessaoComRascunho();
+  it("bloqueia com 403 LIMITE_ATINGIDO e não chama a IA quando a cota acabou", async () => {
+    const { token, memorialId, empresaId } = await criarMemorialPendente("trial");
+    for (const referencia of ["a", "b", "c"]) {
+      await registrarConsumo(empresaId, "memorial.gerar", referencia);
+    }
+
+    const response = await POST(criarRequest(memorialId, token), { params: Promise.resolve({ id: memorialId }) });
+
+    expect(response.status).toBe(403);
+    expect((await response.json()).codigo).toBe("LIMITE_ATINGIDO");
+    expect(regerarMemorial).not.toHaveBeenCalled();
+  });
+
+  it("registra o consumo com o id do memorial quando o retry dá certo", async () => {
+    const { token, memorialId } = await criarMemorialPendente("escritorio");
     vi.mocked(regerarMemorial).mockResolvedValue({
       id: memorialId,
       numero: 1,
@@ -90,20 +108,21 @@ describe("POST /api/memoriais/[id]/retry", () => {
       documentoGeradoUrl: `/api/memoriais/${memorialId}/pdf`,
     });
 
-    const response = await POST(criarRequest(token), { params: Promise.resolve({ id: memorialId }) });
+    const response = await POST(criarRequest(memorialId, token), { params: Promise.resolve({ id: memorialId }) });
 
     expect(response.status).toBe(200);
-    const corpo = await response.json();
-    expect(corpo.memorial.status).toBe("gerado");
-    expect(regerarMemorial).toHaveBeenCalledOnce();
+    const consumos = await db.select().from(consumo);
+    expect(consumos).toHaveLength(1);
+    expect(consumos[0].referencia).toBe(memorialId);
   });
 
-  it("retorna 500 quando regerarMemorial lança", async () => {
-    const { token, memorialId } = await criarSessaoComRascunho();
+  it("não consome quando o retry falha", async () => {
+    const { token, memorialId } = await criarMemorialPendente("escritorio");
     vi.mocked(regerarMemorial).mockRejectedValue(new Error("falhou"));
 
-    const response = await POST(criarRequest(token), { params: Promise.resolve({ id: memorialId }) });
+    const response = await POST(criarRequest(memorialId, token), { params: Promise.resolve({ id: memorialId }) });
 
     expect(response.status).toBe(500);
+    expect(await db.select().from(consumo)).toHaveLength(0);
   });
 });

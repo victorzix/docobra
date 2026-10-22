@@ -1,8 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 import { db } from "@/db";
-import { empresa, memorialDescritivo, projeto, usuario } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
+import { consumo, empresa, memorialDescritivo, plano, planoPermissao, permissao, projeto, usuario } from "@/db/schema";
+import { criarAssinatura } from "@/db/queries/assinatura";
+import { registrarConsumo } from "@/db/queries/consumo";
+import { semearCatalogoNoBancoDeTeste } from "@/db/__tests__/helpers/semear-catalogo";
 import { assinarToken } from "@/lib/auth/jwt";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
@@ -19,6 +24,7 @@ async function limparBanco() {
   await db.delete(projeto);
   await db.delete(usuario);
   await db.delete(empresa);
+  await db.delete(plano).where(eq(plano.chave, "teste-sem-audio"));
 }
 
 function criarRequestGet(token?: string) {
@@ -27,7 +33,18 @@ function criarRequestGet(token?: string) {
   });
 }
 
-async function criarSessaoComProjeto() {
+async function criarPlanoSemAudio() {
+  const [planoCriado] = await db
+    .insert(plano)
+    .values({ chave: "teste-sem-audio", nome: "Teste sem áudio", cicloDias: 30 })
+    .returning();
+  const [permissaoGerar] = await db.select().from(permissao).where(eq(permissao.chave, "memorial.gerar"));
+  await db
+    .insert(planoPermissao)
+    .values({ planoId: planoCriado.id, permissaoId: permissaoGerar.id, valor: 10, janelaDias: 30 });
+}
+
+async function criarSessaoComProjeto(planoChave = "escritorio") {
   const [novaEmpresa] = await db.insert(empresa).values({ nome: "Ancar Engenharia" }).returning();
   const [novoUsuario] = await db
     .insert(usuario)
@@ -37,8 +54,9 @@ async function criarSessaoComProjeto() {
     .insert(projeto)
     .values({ nome: "Casa da Praia", empresaId: novaEmpresa.id })
     .returning();
+  await criarAssinatura(db, { empresaId: novaEmpresa.id, planoChave, status: "ativa", origem: "suporte" });
   const token = await assinarToken({ userId: novoUsuario.id, empresaId: novaEmpresa.id, papel: novoUsuario.papel });
-  return { token, projetoId: novoProjeto.id };
+  return { token, projetoId: novoProjeto.id, empresaId: novaEmpresa.id };
 }
 
 function criarRequest(body: unknown, token?: string) {
@@ -51,6 +69,8 @@ function criarRequest(body: unknown, token?: string) {
     body: JSON.stringify(body),
   });
 }
+
+beforeAll(semearCatalogoNoBancoDeTeste);
 
 describe("POST /api/memoriais", () => {
   beforeEach(limparBanco);
@@ -153,6 +173,75 @@ describe("POST /api/memoriais", () => {
     expect(response.status).toBe(500);
     const corpo = await response.json();
     expect(corpo.id).toBe("memorial-123");
+  });
+
+  it("bloqueia com 403 LIMITE_ATINGIDO e não chama a IA quando a cota acabou", async () => {
+    vi.mocked(gerarMemorial).mockClear();
+    const { token, projetoId, empresaId } = await criarSessaoComProjeto("trial");
+    for (const referencia of ["a", "b", "c"]) {
+      await registrarConsumo(empresaId, "memorial.gerar", referencia);
+    }
+
+    const response = await POST(
+      criarRequest({ projetoId, tipoConstrucao: "residencial", modoEspecificacoes: "texto" }, token),
+    );
+
+    expect(response.status).toBe(403);
+    expect((await response.json()).codigo).toBe("LIMITE_ATINGIDO");
+    expect(gerarMemorial).not.toHaveBeenCalled();
+  });
+
+  it("registra o consumo com o id do memorial gerado", async () => {
+    const { token, projetoId } = await criarSessaoComProjeto();
+    vi.mocked(gerarMemorial).mockResolvedValue({
+      id: "memorial-123",
+      numero: 1,
+      status: "gerado",
+      documentoGeradoUrl: "/api/memoriais/memorial-123/pdf",
+    });
+
+    const response = await POST(
+      criarRequest({ projetoId, tipoConstrucao: "residencial", modoEspecificacoes: "texto" }, token),
+    );
+
+    expect(response.status).toBe(201);
+    const consumos = await db.select().from(consumo);
+    expect(consumos).toHaveLength(1);
+    expect(consumos[0].referencia).toBe("memorial-123");
+  });
+
+  it("não consome quando a geração falha", async () => {
+    const { token, projetoId } = await criarSessaoComProjeto();
+    vi.mocked(gerarMemorial).mockRejectedValue(new CriacaoParcialError("falhou", "memorial-123"));
+
+    await POST(criarRequest({ projetoId, tipoConstrucao: "residencial", modoEspecificacoes: "texto" }, token));
+
+    expect(await db.select().from(consumo)).toHaveLength(0);
+  });
+
+  it("modo áudio em plano sem memorial.audio: 403 PERMISSAO_NEGADA e não chama a IA", async () => {
+    vi.mocked(gerarMemorial).mockClear();
+    await criarPlanoSemAudio();
+    const { token, projetoId } = await criarSessaoComProjeto("teste-sem-audio");
+
+    const response = await POST(
+      criarRequest(
+        {
+          projetoId,
+          tipoConstrucao: "residencial",
+          modoEspecificacoes: "audio",
+          audioBase64: "QUJD",
+          audioMimeType: "audio/webm",
+        },
+        token,
+      ),
+    );
+
+    expect(response.status).toBe(403);
+    const corpo = await response.json();
+    expect(corpo.codigo).toBe("PERMISSAO_NEGADA");
+    expect(corpo.permissao).toBe("memorial.audio");
+    expect(gerarMemorial).not.toHaveBeenCalled();
   });
 });
 

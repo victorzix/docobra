@@ -8,6 +8,8 @@ import { listarMemoriais } from "@/db/queries/memorial";
 import { criarMemorialSchema } from "@/lib/validations/memorial/create.schema";
 import type { MemorialResponse } from "@/lib/validations/memorial/response.schema";
 import type { PaginatedResponse } from "@/lib/pagination";
+import { registrarConsumo } from "@/db/queries/consumo";
+import { exigirPermissao } from "@/lib/permissoes/exigir-permissao";
 import { gerarMemorial } from "@/lib/memorial/gerar";
 import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 
@@ -71,6 +73,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Projeto não encontrado." }, { status: 404 });
     }
 
+    if (parsed.data.modoEspecificacoes === "audio") {
+      const bloqueioAudio = await exigirPermissao(sessao.empresaId, "memorial.audio");
+      if (bloqueioAudio) return bloqueioAudio;
+    }
+    const bloqueio = await exigirPermissao(sessao.empresaId, "memorial.gerar");
+    if (bloqueio) return bloqueio;
+
     const nomes = await buscarNomesUsuarioEEmpresa(sessao.userId);
     const resultado = await gerarMemorial(parsed.data, {
       empresaId: sessao.empresaId,
@@ -79,6 +88,7 @@ export async function POST(request: NextRequest) {
       empresaNome: nomes?.empresaNome ?? "",
       usuarioNome: nomes?.usuarioNome ?? "",
     });
+    await registrarConsumo(sessao.empresaId, "memorial.gerar", resultado.id);
     return NextResponse.json({ memorial: resultado }, { status: 201 });
   } catch (error) {
     if (error instanceof CriacaoParcialError) {
