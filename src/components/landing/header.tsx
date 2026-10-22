@@ -21,15 +21,18 @@ export function LandingHeader({ logado }: { logado: boolean }) {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
+          {/* Link (e não <a>): o clique nativo num âncora cria uma entrada de
+              histórico sem o estado do roteador do Next, e o "voltar" depois
+              troca só a URL e mantém a página anterior renderizada. */}
           {LINKS_NAV.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
               className="group relative text-sm text-slate-300 transition-colors hover:text-white"
             >
               {link.label}
               <span className="marca-gradiente absolute -bottom-1.5 left-0 h-0.5 w-0 rounded-full transition-[width] duration-300 group-hover:w-full" />
-            </a>
+            </Link>
           ))}
         </nav>
 
