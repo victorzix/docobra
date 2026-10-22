@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import type { CriarProjetoInput } from "@/lib/validations/projeto/create.schema";
 import type { Projeto } from "@/db/queries/projeto";
@@ -29,5 +29,10 @@ async function criarProjetoRequest(input: CriarProjetoInput): Promise<ProjetoRes
 }
 
 export function useCriarProjeto() {
-  return useMutation({ mutationFn: criarProjetoRequest });
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: criarProjetoRequest,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["permissoes"] }),
+  });
 }

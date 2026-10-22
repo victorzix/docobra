@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import type { CriarComuniqueSeInput } from "@/lib/validations/comunique-se/create.schema";
 import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
@@ -34,5 +34,10 @@ async function criarComuniqueSeRequest(input: CriarComuniqueSeInput): Promise<Co
 }
 
 export function useCriarComuniqueSe() {
-  return useMutation({ mutationFn: criarComuniqueSeRequest });
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: criarComuniqueSeRequest,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["permissoes"] }),
+  });
 }
