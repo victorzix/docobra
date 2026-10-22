@@ -7,5 +7,8 @@ npx drizzle-kit push --force
 echo "==> Garantindo usuario de teste (dev@docobra.com / 123456)"
 node scripts/seed-usuario.mjs || true
 
+echo "==> Semeando planos e permissoes (idempotente)"
+node scripts/seed-planos.mjs
+
 echo "==> Iniciando o servidor Next.js na porta ${PORT:-3000}"
 exec npm run start -- -p "${PORT:-3000}"
