@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
- * Semeia o catálogo de permissões e os planos, e dá uma assinatura às empresas
- * que ainda não têm (as que existiam antes dos planos). Idempotente.
+ * Semeia o catálogo de permissões e os planos. Idempotente.
  *
  * Os valores abaixo (preços, limites, trial) são PROVISÓRIOS.
  *
@@ -9,9 +8,12 @@
  * novo não desfaz um preço ou limite que foi ajustado no banco depois.
  * Permissões são atualizadas (descrição/tipo), pois são catálogo de código.
  *
+ * Empresas que já existiam antes dos planos só ganham assinatura com
+ * --preencher-existentes; sem a flag, nenhuma empresa é alterada.
+ *
  * Uso:
  *   node scripts/seed-planos.mjs
- *   node scripts/seed-planos.mjs --plano=essencial   # plano das empresas existentes
+ *   node scripts/seed-planos.mjs --preencher-existentes [--plano=essencial]
  */
 
 import { readFile } from "node:fs/promises";
@@ -125,36 +127,52 @@ export async function semearPlanos(client) {
   }
 }
 
+// Não abre transação: assinatura e trecho são dois INSERTs, e quem chama decide
+// o escopo (o seed de usuário já está dentro de uma).
+export async function criarAssinaturaInicial(
+  client,
+  { empresaId, planoChave = "escritorio", agora = new Date() },
+) {
+  const { rows: planos } = await client.query("SELECT id FROM plano WHERE chave = $1", [planoChave]);
+  if (planos.length === 0) {
+    throw new Error(`Plano "${planoChave}" não encontrado. Rode "node scripts/seed-planos.mjs".`);
+  }
+
+  const venceEm = new Date(agora.getTime() + VALIDADE_EMPRESAS_EXISTENTES_DIAS * MS_POR_DIA);
+  const { rows } = await client.query(
+    `INSERT INTO assinatura (empresa_id, inicio, status, vence_em)
+     VALUES ($1, $2, 'ativa', $3)
+     ON CONFLICT (empresa_id) DO NOTHING
+     RETURNING id`,
+    [empresaId, agora, venceEm],
+  );
+  if (rows.length === 0) return false;
+
+  await client.query(
+    `INSERT INTO assinatura_trecho (assinatura_id, plano_id, inicio, origem)
+     VALUES ($1, $2, $3, 'suporte')`,
+    [rows[0].id, planos[0].id, agora],
+  );
+  return true;
+}
+
 export async function preencherAssinaturasExistentes(
   client,
   { planoChave = "escritorio", agora = new Date() } = {},
 ) {
-  const { rows: planos } = await client.query("SELECT id FROM plano WHERE chave = $1", [planoChave]);
-  if (planos.length === 0) {
-    throw new Error(`Plano "${planoChave}" não encontrado. Rode semearPlanos antes.`);
-  }
-
   const { rows: empresas } = await client.query(
     `SELECT e.id FROM empresa e
      LEFT JOIN assinatura a ON a.empresa_id = e.id
      WHERE a.id IS NULL`,
   );
 
-  const venceEm = new Date(agora.getTime() + VALIDADE_EMPRESAS_EXISTENTES_DIAS * MS_POR_DIA);
-
+  let criadas = 0;
   for (const empresa of empresas) {
     await client.query("BEGIN");
     try {
-      const { rows } = await client.query(
-        `INSERT INTO assinatura (empresa_id, inicio, status, vence_em)
-         VALUES ($1, $2, 'ativa', $3) RETURNING id`,
-        [empresa.id, agora, venceEm],
-      );
-      await client.query(
-        `INSERT INTO assinatura_trecho (assinatura_id, plano_id, inicio, origem)
-         VALUES ($1, $2, $3, 'suporte')`,
-        [rows[0].id, planos[0].id, agora],
-      );
+      if (await criarAssinaturaInicial(client, { empresaId: empresa.id, planoChave, agora })) {
+        criadas += 1;
+      }
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");
@@ -162,16 +180,17 @@ export async function preencherAssinaturasExistentes(
     }
   }
 
-  return empresas.length;
+  return criadas;
 }
 
-function parseArgs() {
-  const out = {};
-  for (const arg of process.argv.slice(2)) {
-    const match = arg.match(/^--([a-zA-Z]+)=(.*)$/);
-    if (match) out[match[1]] = match[2];
+export function lerOpcoes(argv) {
+  const opcoes = { planoChave: "escritorio", preencherExistentes: false };
+  for (const arg of argv) {
+    if (arg === "--preencher-existentes") opcoes.preencherExistentes = true;
+    const plano = arg.match(/^--plano=(.+)$/);
+    if (plano) opcoes.planoChave = plano[1];
   }
-  return out;
+  return opcoes;
 }
 
 async function readEnvFile() {
@@ -187,7 +206,7 @@ async function readEnvFile() {
 }
 
 async function main() {
-  const args = parseArgs();
+  const opcoes = lerOpcoes(process.argv.slice(2));
   const env = { ...(await readEnvFile()), ...process.env };
 
   if (!env.DATABASE_URL) {
@@ -202,10 +221,12 @@ async function main() {
     await semearPlanos(client);
     console.log(`Catálogo: ${PERMISSOES.length} permissões, ${PLANOS.length} planos (idempotente).`);
 
-    const total = await preencherAssinaturasExistentes(client, {
-      planoChave: args.plano ?? "escritorio",
-    });
-    console.log(`Empresas que ganharam assinatura: ${total}.`);
+    if (opcoes.preencherExistentes) {
+      const total = await preencherAssinaturasExistentes(client, { planoChave: opcoes.planoChave });
+      console.log(`Empresas que ganharam assinatura: ${total}.`);
+    } else {
+      console.log("Empresas existentes não foram alteradas (use --preencher-existentes).");
+    }
   } finally {
     await client.end();
   }
