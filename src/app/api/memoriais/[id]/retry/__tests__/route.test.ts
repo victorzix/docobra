@@ -111,6 +111,8 @@ describe("POST /api/memoriais/[id]/retry", () => {
     const response = await POST(criarRequest(memorialId, token), { params: Promise.resolve({ id: memorialId }) });
 
     expect(response.status).toBe(200);
+    expect((await response.json()).memorial.status).toBe("gerado");
+    expect(regerarMemorial).toHaveBeenCalledOnce();
     const consumos = await db.select().from(consumo);
     expect(consumos).toHaveLength(1);
     expect(consumos[0].referencia).toBe(memorialId);
