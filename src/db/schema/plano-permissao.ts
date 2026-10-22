@@ -20,5 +20,6 @@ export const planoPermissao = pgTable(
     primaryKey({ columns: [table.planoId, table.permissaoId] }),
     // Limite sem janela (ou janela sem limite) não tem como ser contado.
     check("plano_permissao_valor_janela", sql`(${table.valor} is null) = (${table.janelaDias} is null)`),
+    check("plano_permissao_janela_positiva", sql`${table.janelaDias} is null or ${table.janelaDias} > 0`),
   ],
 );

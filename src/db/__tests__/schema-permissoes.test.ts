@@ -7,6 +7,7 @@ import {
   assinaturaTrecho,
   consumo,
   empresa,
+  empresaPermissao,
   permissao,
   plano,
   planoPermissao,
@@ -81,6 +82,32 @@ describe("schema de permissões", () => {
         permissaoId: novaPermissao.id,
         valor: 5,
         janelaDias: null,
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejeita janela do vínculo do plano igual a zero", async () => {
+    const { novaPermissao, novoPlano } = await criarBase();
+
+    await expect(
+      db.insert(planoPermissao).values({
+        planoId: novoPlano.id,
+        permissaoId: novaPermissao.id,
+        valor: 5,
+        janelaDias: 0,
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejeita janela da sobrescrita da empresa igual a zero", async () => {
+    const { novaEmpresa, novaPermissao } = await criarBase();
+
+    await expect(
+      db.insert(empresaPermissao).values({
+        empresaId: novaEmpresa.id,
+        permissaoId: novaPermissao.id,
+        valor: 5,
+        janelaDias: 0,
       }),
     ).rejects.toThrow();
   });

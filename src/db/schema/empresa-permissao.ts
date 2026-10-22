@@ -22,5 +22,6 @@ export const empresaPermissao = pgTable(
   (table) => [
     primaryKey({ columns: [table.empresaId, table.permissaoId] }),
     check("empresa_permissao_valor_janela", sql`(${table.valor} is null) = (${table.janelaDias} is null)`),
+    check("empresa_permissao_janela_positiva", sql`${table.janelaDias} is null or ${table.janelaDias} > 0`),
   ],
 );
