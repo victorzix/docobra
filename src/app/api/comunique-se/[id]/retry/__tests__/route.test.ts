@@ -1,8 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 import { db } from "@/db";
-import { comuniqueSe, empresa, projeto, usuario } from "@/db/schema";
+import { criarAssinatura } from "@/db/queries/assinatura";
+import { registrarConsumo } from "@/db/queries/consumo";
+import { comuniqueSe, consumo, empresa, projeto, usuario } from "@/db/schema";
+import { semearCatalogoNoBancoDeTeste } from "@/db/__tests__/helpers/semear-catalogo";
 import { assinarToken } from "@/lib/auth/jwt";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 
@@ -20,7 +23,7 @@ async function limparBanco() {
   await db.delete(empresa);
 }
 
-async function criarSessaoComLinha(status: "processando" | "erro" | "pronto" = "erro") {
+async function criarSessaoComLinha(status: "processando" | "erro" | "pronto" = "erro", planoChave = "escritorio") {
   const [novaEmpresa] = await db.insert(empresa).values({ nome: "Ancar Engenharia" }).returning();
   const [novoUsuario] = await db
     .insert(usuario)
@@ -30,12 +33,13 @@ async function criarSessaoComLinha(status: "processando" | "erro" | "pronto" = "
     .insert(projeto)
     .values({ nome: "Casa da Praia", empresaId: novaEmpresa.id })
     .returning();
+  await criarAssinatura(db, { empresaId: novaEmpresa.id, planoChave, status: "ativa", origem: "suporte" });
   const [linha] = await db
     .insert(comuniqueSe)
     .values({ projetoId: novoProjeto.id, numero: 1, status, pdfOriginalUrl: "/x" })
     .returning();
   const token = await assinarToken({ userId: novoUsuario.id, empresaId: novaEmpresa.id, papel: novoUsuario.papel });
-  return { token, comuniqueSeId: linha.id };
+  return { token, comuniqueSeId: linha.id, empresaId: novaEmpresa.id };
 }
 
 function criarRequest(token?: string) {
@@ -46,6 +50,7 @@ function criarRequest(token?: string) {
 }
 
 describe("POST /api/comunique-se/[id]/retry", () => {
+  beforeAll(semearCatalogoNoBancoDeTeste);
   beforeEach(async () => {
     await limparBanco();
     vi.mocked(reprocessarComuniqueSe).mockReset();
@@ -90,6 +95,23 @@ describe("POST /api/comunique-se/[id]/retry", () => {
     expect(response.status).toBe(200);
     const corpo = await response.json();
     expect(corpo.comuniqueSe.status).toBe("pronto");
+    expect(reprocessarComuniqueSe).toHaveBeenCalledTimes(1);
+    const consumos = await db.select().from(consumo);
+    expect(consumos).toHaveLength(1);
+    expect(consumos[0].referencia).toBe(comuniqueSeId);
+  });
+
+  it("bloqueia com 403 LIMITE_ATINGIDO e não reprocessa quando a cota acabou", async () => {
+    const { token, comuniqueSeId, empresaId } = await criarSessaoComLinha("erro", "trial");
+    for (const referencia of ["a", "b", "c"]) {
+      await registrarConsumo(empresaId, "comunique-se.processar", referencia);
+    }
+
+    const response = await POST(criarRequest(token), { params: Promise.resolve({ id: comuniqueSeId }) });
+
+    expect(response.status).toBe(403);
+    expect((await response.json()).codigo).toBe("LIMITE_ATINGIDO");
+    expect(reprocessarComuniqueSe).not.toHaveBeenCalled();
   });
 
   it("retorna 500 quando reprocessarComuniqueSe lança", async () => {
@@ -99,5 +121,6 @@ describe("POST /api/comunique-se/[id]/retry", () => {
     const response = await POST(criarRequest(token), { params: Promise.resolve({ id: comuniqueSeId }) });
 
     expect(response.status).toBe(500);
+    expect(await db.select().from(consumo)).toHaveLength(0);
   });
 });

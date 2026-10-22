@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { verificarToken } from "@/lib/auth/jwt";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import { buscarComuniqueSeDaEmpresa } from "@/db/queries/comunique-se";
+import { registrarConsumo } from "@/db/queries/consumo";
+import { exigirPermissao } from "@/lib/permissoes/exigir-permissao";
 import { reprocessarComuniqueSe } from "@/lib/comunique-se/processar";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -24,11 +26,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Esse Comunique-se já foi processado." }, { status: 400 });
     }
 
+    const bloqueio = await exigirPermissao(sessao.empresaId, "comunique-se.processar");
+    if (bloqueio) return bloqueio;
+
     const resultado = await reprocessarComuniqueSe(
       comuniqueSeEncontrado.id,
       comuniqueSeEncontrado.numero,
       comuniqueSeEncontrado.pdfOriginalUrl,
     );
+    await registrarConsumo(sessao.empresaId, "comunique-se.processar", resultado.id);
     return NextResponse.json({ comuniqueSe: resultado });
   } catch (error) {
     console.error("[POST /api/comunique-se/[id]/retry]", error);

@@ -9,6 +9,9 @@ import type { ComuniqueSeResponse } from "@/lib/validations/comunique-se/respons
 import type { PaginatedResponse } from "@/lib/pagination";
 import { criarComuniqueSeManual, processarComuniqueSe } from "@/lib/comunique-se/processar";
 import { ehPdfValido, TAMANHO_MAXIMO_PDF_BYTES } from "@/lib/comunique-se/storage";
+import { registrarConsumo } from "@/db/queries/consumo";
+import { exigirPermissao } from "@/lib/permissoes/exigir-permissao";
+import { detectarModeloEmbutido } from "@/lib/comunique-se/modelo-detectar";
 import { CriacaoParcialError } from "@/lib/erros/criacao-parcial";
 
 export async function GET(request: NextRequest) {
@@ -90,11 +93,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Arquivo excede o tamanho máximo de 10MB." }, { status: 400 });
     }
 
+    // PDF exportado pelo DocObra traz o checklist embutido e pula a IA: não gasta cota.
+    const modeloEmbutido = Boolean(await detectarModeloEmbutido(pdfBuffer));
+    if (!modeloEmbutido) {
+      const bloqueio = await exigirPermissao(sessao.empresaId, "comunique-se.processar");
+      if (bloqueio) return bloqueio;
+    }
+
     const resultado = await processarComuniqueSe({
       projetoId: parsed.data.projetoId,
       empresaId: sessao.empresaId,
       pdfBuffer,
     });
+    if (!modeloEmbutido) {
+      await registrarConsumo(sessao.empresaId, "comunique-se.processar", resultado.id);
+    }
     return NextResponse.json({ comuniqueSe: resultado }, { status: 201 });
   } catch (error) {
     if (error instanceof CriacaoParcialError) {
