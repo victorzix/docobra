@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -11,6 +11,7 @@ import { verificarPermissao } from "../verificar-permissao";
 
 const AGORA = new Date("2026-06-15T12:00:00Z");
 const emDias = (dias: number) => new Date(AGORA.getTime() + dias * MS_POR_DIA);
+const COM_SUSPENSAO = { suspensaoAtiva: true };
 
 async function limparBanco() {
   await db.delete(empresa);
@@ -115,14 +116,34 @@ describe("verificarPermissao", () => {
     expect((await verificarPermissao(empresaId, "memorial.gerar", AGORA)).permitido).toBe(true);
   });
 
-  it("suspensa: resolve pelo plano suspenso (só lista o acervo)", async () => {
+  it("suspensa (suspensão ligada): resolve pelo plano suspenso (só lista o acervo)", async () => {
     const empresaId = await novaEmpresa();
     await assinar(empresaId, "escritorio", { venceEm: emDias(-10) });
 
-    expect((await verificarPermissao(empresaId, "acervo.listar", AGORA)).permitido).toBe(true);
-    expect((await verificarPermissao(empresaId, "acervo.abrir", AGORA)).permitido).toBe(false);
-    expect((await verificarPermissao(empresaId, "acervo.baixar", AGORA)).permitido).toBe(false);
-    expect((await verificarPermissao(empresaId, "memorial.gerar", AGORA)).permitido).toBe(false);
+    expect((await verificarPermissao(empresaId, "acervo.listar", AGORA, COM_SUSPENSAO)).permitido).toBe(true);
+    expect((await verificarPermissao(empresaId, "acervo.abrir", AGORA, COM_SUSPENSAO)).permitido).toBe(false);
+    expect((await verificarPermissao(empresaId, "acervo.baixar", AGORA, COM_SUSPENSAO)).permitido).toBe(false);
+    expect((await verificarPermissao(empresaId, "memorial.gerar", AGORA, COM_SUSPENSAO)).permitido).toBe(false);
+  });
+
+  it("com a suspensão desligada (padrão), a empresa vencida segue com o plano normal", async () => {
+    const empresaId = await novaEmpresa();
+    await assinar(empresaId, "escritorio", { venceEm: emDias(-10) });
+
+    expect((await verificarPermissao(empresaId, "memorial.gerar", AGORA)).permitido).toBe(true);
+    expect((await verificarPermissao(empresaId, "acervo.abrir", AGORA)).permitido).toBe(true);
+  });
+
+  it("a variável ASSINATURA_SUSPENSAO_ATIVA liga a suspensão quando a opção não é passada", async () => {
+    vi.stubEnv("ASSINATURA_SUSPENSAO_ATIVA", "true");
+    try {
+      const empresaId = await novaEmpresa();
+      await assinar(empresaId, "escritorio", { venceEm: emDias(-10) });
+
+      expect((await verificarPermissao(empresaId, "memorial.gerar", AGORA)).permitido).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("sobrescrita da empresa vence o plano e usa o próprio início como âncora", async () => {
@@ -177,7 +198,7 @@ describe("verificarPermissao", () => {
       inicio: emDias(-1),
     });
 
-    expect((await verificarPermissao(empresaId, "memorial.gerar", AGORA)).permitido).toBe(true);
+    expect((await verificarPermissao(empresaId, "memorial.gerar", AGORA, COM_SUSPENSAO)).permitido).toBe(true);
   });
 });
 
