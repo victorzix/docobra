@@ -287,3 +287,71 @@ describe("AsaasProvider.lerWebhook", () => {
     expect(evento?.referencia).toBeNull();
   });
 });
+
+describe("AsaasProvider: configuração obrigatória", () => {
+  it("recusa webhookToken vazio ou só com espaços", () => {
+    expect(
+      () => new AsaasProvider({ apiKey: "chave", baseUrl: BASE, webhookToken: "" }),
+    ).toThrow("ASAAS_WEBHOOK_TOKEN não pode ser vazio.");
+    expect(
+      () => new AsaasProvider({ apiKey: "chave", baseUrl: BASE, webhookToken: "   " }),
+    ).toThrow("ASAAS_WEBHOOK_TOKEN não pode ser vazio.");
+  });
+
+  it("recusa apiKey vazia", () => {
+    expect(
+      () => new AsaasProvider({ apiKey: "", baseUrl: BASE, webhookToken: "token" }),
+    ).toThrow("ASAAS_API_KEY não pode ser vazia.");
+  });
+});
+
+describe("AsaasProvider: corpo da resposta", () => {
+  const entrada = {
+    clienteId: "cus_123",
+    referencia: "cobranca-1",
+    valorCentavos: 9900,
+    venceEm: new Date("2026-06-18T12:00:00Z"),
+    descricao: "x",
+  };
+
+  it("200 com corpo não-JSON vira falha incerta", async () => {
+    const fetchMock = vi.fn(async () => new Response("não é json", { status: 200 }));
+
+    const erro = await criarProvider(fetchMock as unknown as typeof fetch)
+      .criarCobranca(entrada)
+      .catch((e) => e);
+
+    expect(erro).toBeInstanceOf(FalhaIncertaError);
+  });
+
+  it("abort durante a leitura do corpo vira falha incerta", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        ({
+          ok: true,
+          status: 200,
+          json: async () => {
+            throw new DOMException("The operation was aborted", "AbortError");
+          },
+        }) as unknown as Response,
+    );
+
+    const erro = await criarProvider(fetchMock as unknown as typeof fetch)
+      .criarCobranca(entrada)
+      .catch((e) => e);
+
+    expect(erro).toBeInstanceOf(FalhaIncertaError);
+  });
+
+  it("4xx com corpo não-JSON vira recusa com mensagem de fallback", async () => {
+    const fetchMock = vi.fn(async () => new Response("<html>bad gateway</html>", { status: 400 }));
+
+    const erro = await criarProvider(fetchMock as unknown as typeof fetch)
+      .criarCobranca(entrada)
+      .catch((e) => e);
+
+    expect(erro).toBeInstanceOf(RecusaDefinitivaError);
+    expect(erro.message).toBe("O Asaas recusou a requisição (400).");
+    expect(erro.status).toBe(400);
+  });
+});

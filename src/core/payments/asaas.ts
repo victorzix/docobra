@@ -69,7 +69,10 @@ function tokensIguais(recebido: string, esperado: string): boolean {
 export class AsaasProvider implements PaymentProvider {
   readonly nome = "asaas";
 
-  constructor(private readonly opcoes: OpcoesAsaas) {}
+  constructor(private readonly opcoes: OpcoesAsaas) {
+    if (!opcoes.apiKey.trim()) throw new Error("ASAAS_API_KEY não pode ser vazia.");
+    if (!opcoes.webhookToken.trim()) throw new Error("ASAAS_WEBHOOK_TOKEN não pode ser vazio.");
+  }
 
   private async requisitar<T>(metodo: string, caminho: string, corpo?: unknown): Promise<T> {
     const fetchImpl = this.opcoes.fetchImpl ?? fetch;
@@ -104,7 +107,11 @@ export class AsaasProvider implements PaymentProvider {
       );
     }
 
-    return (await resposta.json()) as T;
+    try {
+      return (await resposta.json()) as T;
+    } catch (erro) {
+      throw new FalhaIncertaError("O Asaas respondeu, mas o corpo não pôde ser lido.", erro);
+    }
   }
 
   async criarCliente(dados: DadosCliente, referencia: string): Promise<string> {
