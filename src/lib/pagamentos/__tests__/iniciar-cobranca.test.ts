@@ -449,6 +449,48 @@ describe("iniciarCobranca", () => {
       expect(provedor.cancelarCobranca).toHaveBeenCalledWith("pay_1");
     });
 
+    it("cancela a obsoleta no gateway uma única vez no caminho feliz", async () => {
+      const cenario = await criarCenario();
+      const provedor = provedorComIdsDistintos(new Date(AGORA.getTime() - 60 * 60 * 1000));
+      const dados = {
+        empresaId: cenario.empresaId,
+        tipo: "assinatura" as const,
+        planoDestinoChave: "essencial",
+        agora: AGORA,
+        roteador: new PaymentRouter([provedor]),
+      };
+
+      await iniciarCobranca(dados);
+      await iniciarCobranca(dados);
+
+      expect(provedor.cancelarCobranca).toHaveBeenCalledTimes(1);
+      expect(provedor.cancelarCobranca).toHaveBeenCalledWith("pay_1");
+    });
+
+    it.each([
+      ["recusa definitiva", () => new RecusaDefinitivaError("recusou")],
+      ["falha incerta", () => new FalhaIncertaError("timeout")],
+    ])("cancela a obsoleta no gateway mesmo quando a nova cobrança falha (%s)", async (_nome, criarErro) => {
+      const cenario = await criarCenario();
+      const provedor = provedorComIdsDistintos(new Date(AGORA.getTime() - 60 * 60 * 1000));
+      const dados = {
+        empresaId: cenario.empresaId,
+        tipo: "assinatura" as const,
+        planoDestinoChave: "essencial",
+        agora: AGORA,
+        roteador: new PaymentRouter([provedor]),
+      };
+      await iniciarCobranca(dados);
+      vi.mocked(provedor.criarCobranca).mockImplementation(async () => {
+        throw criarErro();
+      });
+      vi.mocked(provedor.buscarCobrancaPorReferencia).mockResolvedValue(null);
+
+      await expect(iniciarCobranca(dados)).rejects.toThrow();
+
+      expect(provedor.cancelarCobranca).toHaveBeenCalledWith("pay_1");
+    });
+
     it("pendente com valor diferente não é reaproveitada: a velha é cancelada e nasce outra", async () => {
       const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", inicio: emDias(-10), venceEm: emDias(20) });
       const provedor = provedorComIdsDistintos();

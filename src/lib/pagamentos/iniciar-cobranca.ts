@@ -191,11 +191,12 @@ export async function iniciarCobranca(input: IniciarCobrancaInput): Promise<Cobr
     agora,
   };
   let pendente = await buscarCobrancaPendenteReutilizavel(chave);
-  let obsoletas: Cobranca[] = [];
 
   if (!pendente) {
     if (!empresaEncontrada.documento) throw new DocumentoAusenteError();
-    obsoletas = await cancelarCobrancasPendentesObsoletas(chave);
+    const obsoletas = await cancelarCobrancasPendentesObsoletas(chave);
+    // Antes de qualquer retorno antecipado ou erro: depois daqui a lista se perderia e o cliente ficaria com um Pix vivo.
+    await cancelarNoGateway(roteador, obsoletas);
     pendente = await criarCobrancaPendenteSeLivre({
       assinaturaId: vigente.id,
       empresaId,
@@ -246,7 +247,6 @@ export async function iniciarCobranca(input: IniciarCobrancaInput): Promise<Cobr
       providerChargeId: criada.providerChargeId,
       pix: criada.pix,
     });
-    await cancelarNoGateway(roteador, obsoletas);
     return registrada;
   } catch (erro) {
     // Pode ter sido criada no gateway apesar do erro: antes de desistir, adota a que existir.
@@ -259,7 +259,6 @@ export async function iniciarCobranca(input: IniciarCobrancaInput): Promise<Cobr
       }
       if (encontrada) {
         const registrada = await registrarCobrancaNoGateway(pendente.id, { provider: erro.provider, ...encontrada });
-        await cancelarNoGateway(roteador, obsoletas);
         return registrada;
       }
     }

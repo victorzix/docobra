@@ -145,7 +145,12 @@ export class AsaasProvider implements PaymentProvider {
       externalReference: input.referencia,
       description: input.descricao,
     });
-    return this.buscarQrCode(pagamento.id);
+    try {
+      return await this.buscarQrCode(pagamento.id);
+    } catch (erro) {
+      // A cobrança já existe no Asaas: recusa aqui faria o roteador tentar outro provider ou criar órfãs.
+      throw new FalhaIncertaError("A cobrança foi criada no Asaas, mas o QR Code não pôde ser obtido.", erro);
+    }
   }
 
   async buscarCobrancaPorReferencia(referencia: string): Promise<CobrancaCriada | null> {

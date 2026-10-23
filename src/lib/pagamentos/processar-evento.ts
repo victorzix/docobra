@@ -34,7 +34,7 @@ export async function processarEventoPagamento(
 ): Promise<ResultadoEvento> {
   // Evento e efeitos na MESMA transação: se algo falhar, o registro do evento volta
   // junto e o reenvio do gateway reprocessa (senão ele cairia como "duplicado").
-  const { resultado, paraCancelar } = await db.transaction(async (tx) => {
+  const { resultado, paraCancelar, cobrancaIdDoEvento } = await db.transaction(async (tx) => {
     const [registrado] = await tx
       .insert(eventoPagamento)
       .values({
@@ -48,7 +48,7 @@ export async function processarEventoPagamento(
       .returning({ id: eventoPagamento.id });
 
     if (!registrado) {
-      return { resultado: "duplicado" as ResultadoEvento, paraCancelar: [] as CobrancaParaCancelarNoGateway[] };
+      return { resultado: "duplicado" as ResultadoEvento, paraCancelar: [] as CobrancaParaCancelarNoGateway[], cobrancaIdDoEvento: null as string | null };
     }
 
     let encontrada = await acharCobranca(tx, providerNome, evento);
@@ -63,10 +63,12 @@ export async function processarEventoPagamento(
     let resultadoDoEvento: ResultadoEvento = "ignorado";
     let cancelar: CobrancaParaCancelarNoGateway[] = [];
 
+    // Cobrança do gateway diferente da registrada (ex.: segunda cobrança órfã da mesma referência).
+    const outraCobranca = !!encontrada && encontrada.providerChargeId !== evento.providerChargeId;
+
     if (!encontrada) {
       resultadoDoEvento = "sem_cobranca";
     } else if (evento.status === "paga") {
-      const outraCobranca = encontrada.providerChargeId !== evento.providerChargeId;
       const semEfeito = encontrada.status === "cancelada" || encontrada.status === "estornada";
       if (outraCobranca || semEfeito) {
         resultadoDoEvento = "pagamento_sem_efeito";
@@ -74,6 +76,8 @@ export async function processarEventoPagamento(
         cancelar = await aplicarPagamento(tx, encontrada, agora);
         resultadoDoEvento = "processado";
       }
+    } else if (outraCobranca) {
+      resultadoDoEvento = "ignorado";
     } else if (evento.status === "vencida") {
       if (encontrada.status === "pendente") {
         await tx.update(cobranca).set({ status: "vencida", updatedAt: agora }).where(eq(cobranca.id, encontrada.id));
@@ -96,8 +100,18 @@ export async function processarEventoPagamento(
       .set({ cobrancaId: encontrada?.id ?? null, resultado: resultadoDoEvento })
       .where(eq(eventoPagamento.id, registrado.id));
 
-    return { resultado: resultadoDoEvento, paraCancelar: cancelar };
+    return { resultado: resultadoDoEvento, paraCancelar: cancelar, cobrancaIdDoEvento: encontrada?.id ?? null };
   });
+
+  const semEfeitoOuEstorno = resultado === "pagamento_sem_efeito" || resultado === "sem_cobranca" || (resultado === "processado" && evento.status === "estornada");
+  if (semEfeitoOuEstorno) {
+    const rotulo = resultado === "processado" ? "estorno processado" : resultado;
+    console.warn(`[pagamentos] ${rotulo}`, {
+      eventId: evento.eventId,
+      providerChargeId: evento.providerChargeId,
+      cobrancaId: cobrancaIdDoEvento,
+    });
+  }
 
   for (const alvo of paraCancelar) {
     try {

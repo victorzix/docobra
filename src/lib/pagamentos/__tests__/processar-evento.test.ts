@@ -113,6 +113,74 @@ describe("processarEventoPagamento", () => {
     expect(registrado.resultado).toBe("pagamento_sem_efeito");
   });
 
+  it.each(["vencida", "cancelada", "estornada"] as const)(
+    "%s de outra cobrança do gateway (charge id diferente) é ignorado e não mexe na linha",
+    async (status) => {
+      const cenario = await criarCenario();
+      const pendente = await inserirCobranca(cenario, { providerChargeId: "pay_registrada" });
+
+      const resultado = await processarEventoPagamento(
+        "asaas",
+        evento(pendente, status, { providerChargeId: "pay_orfa" }),
+        { agora: AGORA },
+      );
+
+      expect(resultado).toBe("ignorado");
+      expect((await cobrancaDe(pendente.id)).status).toBe("pendente");
+    },
+  );
+
+  describe("aviso de dinheiro sem efeito", () => {
+    it("avisa em pagamento_sem_efeito, sem_cobranca e estorno processado", async () => {
+      const aviso = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      try {
+        const cenario = await criarCenario();
+        const cancelada = await inserirCobranca(cenario, { status: "cancelada" });
+        await processarEventoPagamento("asaas", evento(cancelada, "paga"), { agora: AGORA });
+        expect(aviso).toHaveBeenCalledTimes(1);
+        expect(aviso.mock.calls[0][1]).toMatchObject({
+          eventId: `evt_paga_${cancelada.id}`,
+          providerChargeId: cancelada.providerChargeId,
+          cobrancaId: cancelada.id,
+        });
+
+        await processarEventoPagamento(
+          "asaas",
+          {
+            eventId: "evt_orfao",
+            tipoOriginal: "PAYMENT_RECEIVED",
+            status: "paga",
+            providerChargeId: "pay_desconhecida",
+            referencia: null,
+            payload: {},
+          },
+          { agora: AGORA },
+        );
+        expect(aviso).toHaveBeenCalledTimes(2);
+
+        const outraPaga = await inserirCobranca(cenario, { tipo: "renovacao", status: "paga" });
+        await processarEventoPagamento("asaas", evento(outraPaga, "estornada"), { agora: AGORA });
+        expect(aviso).toHaveBeenCalledTimes(3);
+      } finally {
+        aviso.mockRestore();
+      }
+    });
+
+    it("não avisa em paga processada nem em duplicado", async () => {
+      const aviso = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      try {
+        const cenario = await criarCenario();
+        const pendente = await inserirCobranca(cenario);
+        const dados = evento(pendente, "paga");
+        expect(await processarEventoPagamento("asaas", dados, { agora: AGORA })).toBe("processado");
+        expect(await processarEventoPagamento("asaas", dados, { agora: AGORA })).toBe("duplicado");
+        expect(aviso).not.toHaveBeenCalled();
+      } finally {
+        aviso.mockRestore();
+      }
+    });
+  });
+
   it("pagamento de cobrança já cancelada não tem efeito (dinheiro entrou, o suporte resolve)", async () => {
     const cenario = await criarCenario();
     const cancelada = await inserirCobranca(cenario, { status: "cancelada" });

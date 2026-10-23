@@ -140,6 +140,20 @@ describe("AsaasProvider: classificação de erros", () => {
     expect(erro.status).toBe(400);
   });
 
+  it.each([400, 500])("POST ok e QR Code com %i vira falha incerta (a cobrança já existe no Asaas)", async (status) => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(resposta({ id: "pay_1" }))
+      .mockResolvedValueOnce(resposta({ errors: [{ code: "x", description: "sem chave Pix" }] }, status));
+
+    const erro = await criarProvider(fetchMock as unknown as typeof fetch)
+      .criarCobranca(entrada)
+      .catch((e) => e);
+
+    expect(erro).toBeInstanceOf(FalhaIncertaError);
+    expect(erro.causa).toBeDefined();
+  });
+
   it("401 também é recusa definitiva", async () => {
     const fetchMock = vi.fn(async () => resposta({ errors: [{ code: "invalid_access_token" }] }, 401));
 
