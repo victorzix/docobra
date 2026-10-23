@@ -11,3 +11,6 @@ export * from "./empresa-permissao";
 export * from "./assinatura";
 export * from "./assinatura-trecho";
 export * from "./consumo";
+export * from "./cliente-gateway";
+export * from "./cobranca";
+export * from "./evento-pagamento";
