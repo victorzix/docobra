@@ -7,7 +7,11 @@ export interface PlanoCobravel {
   precoCentavos: number;
 }
 
-export type MotivoRecusaUpgrade = "mesmo_plano" | "periodicidade_diferente" | "mesmo_nivel_ou_menor";
+export type MotivoRecusaUpgrade =
+  | "mesmo_plano"
+  | "periodicidade_diferente"
+  | "mesmo_nivel_ou_menor"
+  | "preco_nao_maior";
 
 export type SimulacaoUpgrade =
   | { ok: true; valorCentavos: number; diasRestantes: number }
@@ -41,6 +45,7 @@ export function avaliarUpgrade(
   if (atual.chave === destino.chave) return { permitido: false, motivo: "mesmo_plano" };
   if (atual.cicloDias !== destino.cicloDias) return { permitido: false, motivo: "periodicidade_diferente" };
   if (destino.nivel <= atual.nivel) return { permitido: false, motivo: "mesmo_nivel_ou_menor" };
+  if (destino.precoCentavos <= atual.precoCentavos) return { permitido: false, motivo: "preco_nao_maior" };
   return { permitido: true };
 }
 

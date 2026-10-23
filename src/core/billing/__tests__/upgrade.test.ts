@@ -17,6 +17,8 @@ const PRO: PlanoCobravel = { chave: "pro", nivel: 2, cicloDias: 30, precoCentavo
 const OUTRO_NIVEL_1: PlanoCobravel = { chave: "outro", nivel: 1, cicloDias: 30, precoCentavos: 4000 };
 const ANUAL_1: PlanoCobravel = { chave: "anual-1", nivel: 1, cicloDias: 360, precoCentavos: 30000 };
 const ANUAL_2: PlanoCobravel = { chave: "anual-2", nivel: 2, cicloDias: 360, precoCentavos: 60000 };
+const MAIS_BARATO: PlanoCobravel = { chave: "mais-barato", nivel: 3, cicloDias: 30, precoCentavos: 5000 };
+const MESMO_PRECO: PlanoCobravel = { chave: "mesmo-preco", nivel: 3, cicloDias: 30, precoCentavos: 6200 };
 
 describe("valorDoUpgradeCentavos", () => {
   it("R$ 31 → R$ 62 no dia 15 de 30: R$ 15,50", () => {
@@ -102,6 +104,11 @@ describe("avaliarUpgrade", () => {
     expect(avaliarUpgrade(PRO, BASICO)).toEqual({ permitido: false, motivo: "mesmo_nivel_ou_menor" });
     expect(avaliarUpgrade(BASICO, OUTRO_NIVEL_1)).toEqual({ permitido: false, motivo: "mesmo_nivel_ou_menor" });
   });
+
+  it("recusa nível maior com preço menor ou igual", () => {
+    expect(avaliarUpgrade(PRO, MAIS_BARATO)).toEqual({ permitido: false, motivo: "preco_nao_maior" });
+    expect(avaliarUpgrade(PRO, MESMO_PRECO)).toEqual({ permitido: false, motivo: "preco_nao_maior" });
+  });
 });
 
 describe("simularUpgrade", () => {
@@ -143,6 +150,13 @@ describe("simularUpgrade", () => {
     expect(simularUpgrade({ atual: PRO, destino: BASICO, venceEm: emDias(30), agora: emDias(15) })).toEqual({
       ok: false,
       motivo: "mesmo_nivel_ou_menor",
+    });
+  });
+
+  it("recusa upgrade de nível maior e preço menor, em vez de devolver valor negativo", () => {
+    expect(simularUpgrade({ atual: PRO, destino: MAIS_BARATO, venceEm: emDias(30), agora: emDias(15) })).toEqual({
+      ok: false,
+      motivo: "preco_nao_maior",
     });
   });
 

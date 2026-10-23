@@ -22,6 +22,8 @@ renovação, tela de planos. Nada aqui lê ou escreve no banco.
   = R$ 15,50.
 - Troca por conta própria só para cima (`nivel` maior) e na mesma periodicidade. Downgrade e
   mensal↔anual só pelo suporte.
+- O destino precisa custar mais que o plano atual; um plano de nível maior porém mais barato é
+  recusado (`preco_nao_maior`), para nunca gerar valor de upgrade negativo ou zero.
 - A cobrança do ciclo seguinte é gerada com antecedência (padrão 5 dias) e vence no fim do
   ciclo atual. Sem troca de plano, o total do ciclo é exatamente o preço.
 
@@ -33,13 +35,13 @@ Reaproveita `MS_POR_DIA` de `@/lib/permissoes/janela`.
 **`upgrade.ts`**
 
 - `interface PlanoCobravel { chave: string; nivel: number; cicloDias: number; precoCentavos: number }`
-- `type MotivoRecusaUpgrade = "mesmo_plano" | "periodicidade_diferente" | "mesmo_nivel_ou_menor"`
+- `type MotivoRecusaUpgrade = "mesmo_plano" | "periodicidade_diferente" | "mesmo_nivel_ou_menor" | "preco_nao_maior"`
 - `diasRestantesNoCiclo(venceEm: Date, agora: Date, cicloDias: number): number` — teto de
   `(venceEm − agora) ÷ 1 dia`, limitado entre 0 e `cicloDias`.
 - `valorDoUpgradeCentavos({ precoAtualCentavos, precoNovoCentavos, cicloDias, diasRestantes }): number`
   — aritmética inteira, meio para cima, sem depender de ponto flutuante.
 - `avaliarUpgrade(atual, destino): { permitido: true } | { permitido: false; motivo: MotivoRecusaUpgrade }`
-  — ordem das checagens: mesmo plano, periodicidade, nível.
+  — ordem das checagens: mesmo plano, periodicidade, nível, preço.
 - `simularUpgrade({ atual, destino, venceEm, agora }): SimulacaoUpgrade` com
   `SimulacaoUpgrade = { ok: true; valorCentavos: number; diasRestantes: number } | { ok: false; motivo: MotivoRecusaUpgrade | "ciclo_vencido" }`.
   A política (`avaliarUpgrade`) vem antes de `ciclo_vencido`; ciclo vencido (`agora ≥ venceEm`)
