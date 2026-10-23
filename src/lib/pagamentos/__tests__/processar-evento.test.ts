@@ -225,4 +225,57 @@ describe("processarEventoPagamento", () => {
     const depois = await assinaturaDe(cenario.assinaturaId);
     expect(depois.venceEm).toEqual(proximoVencimento(antes.venceEm, destino.cicloDias));
   });
+
+  it("cobrança sem id do gateway gravado, achada pela referência: adota o id e aplica o pagamento", async () => {
+    const cenario = await criarCenario();
+    const pendente = await inserirCobranca(cenario, { provider: null, providerChargeId: null });
+
+    const resultado = await processarEventoPagamento(
+      "asaas",
+      evento({ id: pendente.id, providerChargeId: "pay_adotada" }, "paga"),
+      { agora: AGORA },
+    );
+
+    expect(resultado).toBe("processado");
+    expect(await cobrancaDe(pendente.id)).toMatchObject({
+      status: "paga",
+      provider: "asaas",
+      providerChargeId: "pay_adotada",
+    });
+  });
+
+  it("trava a linha da cobrança: evento espera quem a segura e então lê o status já commitado", async () => {
+    const cenario = await criarCenario();
+    const pendente = await inserirCobranca(cenario);
+    let liberar!: () => void;
+    const seguraAteLiberar = new Promise<void>((resolve) => {
+      liberar = resolve;
+    });
+    let travou!: () => void;
+    const jaTravou = new Promise<void>((resolve) => {
+      travou = resolve;
+    });
+    const segurando = db.transaction(async (tx) => {
+      await tx.update(cobranca).set({ status: "paga" }).where(eq(cobranca.id, pendente.id));
+      travou();
+      await seguraAteLiberar;
+    });
+
+    try {
+      await jaTravou;
+      let terminou = false;
+      const processando = processarEventoPagamento("asaas", evento(pendente, "paga"), { agora: AGORA }).finally(() => {
+        terminou = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(terminou).toBe(false);
+
+      liberar();
+      await segurando;
+      expect(await processando).toBe("ignorado");
+    } finally {
+      liberar();
+      await segurando.catch(() => undefined);
+    }
+  });
 });

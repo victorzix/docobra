@@ -51,7 +51,15 @@ export async function processarEventoPagamento(
       return { resultado: "duplicado" as ResultadoEvento, paraCancelar: [] as CobrancaParaCancelarNoGateway[] };
     }
 
-    const encontrada = await acharCobranca(tx, providerNome, evento);
+    let encontrada = await acharCobranca(tx, providerNome, evento);
+    // Id do gateway ainda não gravado (registro falhou após timeout): o pagamento é desta cobrança.
+    if (encontrada && encontrada.providerChargeId === null) {
+      await tx
+        .update(cobranca)
+        .set({ provider: providerNome, providerChargeId: evento.providerChargeId, updatedAt: agora })
+        .where(eq(cobranca.id, encontrada.id));
+      encontrada = { ...encontrada, provider: providerNome, providerChargeId: evento.providerChargeId };
+    }
     let resultadoDoEvento: ResultadoEvento = "ignorado";
     let cancelar: CobrancaParaCancelarNoGateway[] = [];
 
