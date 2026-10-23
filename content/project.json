@@ -12,7 +12,7 @@
     "es": "Un MVP con dos módulos tras un único inicio de sesión: un **generador de Memorial Técnico** que convierte un formulario corto (opcionalmente por voz) en un documento completo con formato ABNT, y un **traductor de exigencias municipales** que lee un PDF de \"Comunique-se\" y devuelve un checklist de tareas en lenguaje simple. Cada llamada de IA pasa por una capa multi-proveedor que usa Gemini por defecto y recurre a Claude, con el orden configurable por caso de uso."
   },
   "stack": ["Next.js", "TypeScript", "PostgreSQL", "Drizzle"],
-  "status": "wip",
+  "status": "active",
   "year": 2026,
   "sortOrder": 0,
   "repoUrl": "https://github.com/victorzix/docobra",
