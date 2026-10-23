@@ -99,7 +99,7 @@ describe("iniciarCobranca", () => {
       expect(await todasAsCobrancas()).toHaveLength(1);
     });
 
-    it("não reaproveita cliente nem cria outro: o cliente do gateway é cadastrado uma vez só", async () => {
+    it("cadastra o cliente do gateway uma vez só", async () => {
       const cenario = await criarCenario();
       const provedor = criarProvedorFalso("asaas");
       let contador = 0;
@@ -391,6 +391,119 @@ describe("iniciarCobranca", () => {
       const [guardada] = await db.select().from(cobranca).where(eq(cobranca.empresaId, cenario.empresaId));
       expect(guardada.status).toBe("pendente");
       expect(guardada.providerChargeId).toBeNull();
+    });
+
+    it("falha incerta e a consulta por referência também falha: relança o erro original", async () => {
+      const cenario = await criarCenario();
+      const original = new FalhaIncertaError("timeout");
+      const provedor = criarProvedorFalso("asaas", {
+        criarCobranca: vi.fn(async () => {
+          throw original;
+        }),
+        buscarCobrancaPorReferencia: vi.fn(async () => {
+          throw new Error("consulta fora do ar");
+        }),
+      });
+
+      const erro = await iniciarCobranca({
+        empresaId: cenario.empresaId,
+        tipo: "assinatura",
+        planoDestinoChave: "essencial",
+        agora: AGORA,
+        roteador: new PaymentRouter([provedor]),
+      }).catch((e) => e);
+
+      expect(erro).toBe(original);
+    });
+  });
+
+  describe("reaproveitamento e concorrência", () => {
+    function provedorComIdsDistintos(pixExpiraEm: Date | null = null) {
+      const provedor = criarProvedorFalso("asaas");
+      let contador = 0;
+      vi.mocked(provedor.criarCobranca).mockImplementation(async () => ({
+        providerChargeId: `pay_${++contador}`,
+        pix: { copiaECola: "copia", qrCodeBase64: "qr", expiraEm: pixExpiraEm },
+      }));
+      return provedor;
+    }
+
+    it("Pix expirado (com a cobrança ainda no prazo): cria outra, cancela a velha local e no gateway", async () => {
+      const cenario = await criarCenario();
+      const provedor = provedorComIdsDistintos(new Date(AGORA.getTime() - 60 * 60 * 1000));
+      const dados = {
+        empresaId: cenario.empresaId,
+        tipo: "assinatura" as const,
+        planoDestinoChave: "essencial",
+        agora: AGORA,
+        roteador: new PaymentRouter([provedor]),
+      };
+
+      const velha = await iniciarCobranca(dados);
+      const nova = await iniciarCobranca(dados);
+
+      expect(nova.id).not.toBe(velha.id);
+      const linhas = await todasAsCobrancas();
+      expect(linhas.find((c) => c.id === velha.id)?.status).toBe("cancelada");
+      expect(linhas.find((c) => c.id === nova.id)?.status).toBe("pendente");
+      expect(provedor.cancelarCobranca).toHaveBeenCalledWith("pay_1");
+    });
+
+    it("pendente com valor diferente não é reaproveitada: a velha é cancelada e nasce outra", async () => {
+      const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", inicio: emDias(-10), venceEm: emDias(20) });
+      const provedor = provedorComIdsDistintos();
+      const dados = {
+        empresaId: cenario.empresaId,
+        tipo: "upgrade" as const,
+        planoDestinoChave: "escritorio",
+        agora: AGORA,
+        roteador: new PaymentRouter([provedor]),
+      };
+
+      const velha = await iniciarCobranca({ ...dados, valorMinimoCentavos: 500 });
+      const nova = await iniciarCobranca({ ...dados, valorMinimoCentavos: 20000 });
+
+      expect(velha.valorCentavos).toBe(10000);
+      expect(nova.valorCentavos).toBe(20000);
+      expect(nova.id).not.toBe(velha.id);
+      expect((await todasAsCobrancas()).filter((c) => c.status === "pendente")).toHaveLength(1);
+    });
+
+    it("falha ao cancelar no gateway não derruba a requisição", async () => {
+      const cenario = await criarCenario();
+      const provedor = provedorComIdsDistintos(new Date(AGORA.getTime() - 1000));
+      vi.mocked(provedor.cancelarCobranca).mockRejectedValue(new Error("gateway fora"));
+      const erroLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const dados = {
+        empresaId: cenario.empresaId,
+        tipo: "assinatura" as const,
+        planoDestinoChave: "essencial",
+        agora: AGORA,
+        roteador: new PaymentRouter([provedor]),
+      };
+
+      await iniciarCobranca(dados);
+      const nova = await iniciarCobranca(dados);
+
+      expect(nova.status).toBe("pendente");
+      expect(erroLog).toHaveBeenCalled();
+      erroLog.mockRestore();
+    });
+
+    it("duas chamadas concorrentes terminam com uma única pendente para a chave", async () => {
+      const cenario = await criarCenario();
+      const dados = {
+        empresaId: cenario.empresaId,
+        tipo: "assinatura" as const,
+        planoDestinoChave: "essencial",
+        agora: AGORA,
+        roteador: new PaymentRouter([provedorComIdsDistintos()]),
+      };
+
+      await Promise.allSettled([iniciarCobranca(dados), iniciarCobranca(dados)]);
+
+      const pendentes = (await todasAsCobrancas()).filter((c) => c.status === "pendente");
+      expect(pendentes).toHaveLength(1);
     });
   });
 });

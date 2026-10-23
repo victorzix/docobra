@@ -10,7 +10,8 @@ import { buscarAssinaturaVigente, type AssinaturaVigente } from "@/db/queries/as
 import { buscarProviderClienteId, salvarProviderClienteId } from "@/db/queries/cliente-gateway";
 import {
   buscarCobrancaPendenteReutilizavel,
-  criarCobrancaPendente,
+  cancelarCobrancasPendentesObsoletas,
+  criarCobrancaPendenteSeLivre,
   registrarCobrancaNoGateway,
   type Cobranca,
 } from "@/db/queries/cobranca";
@@ -132,6 +133,17 @@ function planejar(tipo: TipoCobranca, c: Contexto): Planejamento {
   };
 }
 
+async function cancelarNoGateway(roteador: PaymentRouter, obsoletas: Cobranca[]) {
+  for (const velha of obsoletas) {
+    if (!velha.provider || !velha.providerChargeId) continue;
+    try {
+      await roteador.provider(velha.provider).cancelarCobranca(velha.providerChargeId);
+    } catch (erro) {
+      console.error("Falha ao cancelar no gateway a cobrança obsoleta", velha.id, erro);
+    }
+  }
+}
+
 export interface IniciarCobrancaInput {
   empresaId: string;
   tipo: TipoCobranca;
@@ -171,16 +183,20 @@ export async function iniciarCobranca(input: IniciarCobrancaInput): Promise<Cobr
     valorMinimoCentavos,
   });
 
-  let pendente = await buscarCobrancaPendenteReutilizavel({
+  const chave = {
     assinaturaId: vigente.id,
     tipo,
     planoDestinoId: planejamento.destino.id,
+    valorCentavos: planejamento.valorCentavos,
     agora,
-  });
+  };
+  let pendente = await buscarCobrancaPendenteReutilizavel(chave);
+  let obsoletas: Cobranca[] = [];
 
   if (!pendente) {
     if (!empresaEncontrada.documento) throw new DocumentoAusenteError();
-    pendente = await criarCobrancaPendente({
+    obsoletas = await cancelarCobrancasPendentesObsoletas(chave);
+    pendente = await criarCobrancaPendenteSeLivre({
       assinaturaId: vigente.id,
       empresaId,
       tipo,
@@ -188,6 +204,9 @@ export async function iniciarCobranca(input: IniciarCobrancaInput): Promise<Cobr
       valorCentavos: planejamento.valorCentavos,
       venceEm: planejamento.venceEm,
     });
+    // Perdeu a corrida para uma chamada concorrente: segue com a cobrança dela.
+    pendente ??= await buscarCobrancaPendenteReutilizavel(chave);
+    if (!pendente) throw new Error("Não foi possível iniciar a cobrança.");
   }
 
   if (pendente.providerChargeId) return pendente;
@@ -222,17 +241,26 @@ export async function iniciarCobranca(input: IniciarCobrancaInput): Promise<Cobr
       },
       resolverCliente,
     );
-    return await registrarCobrancaNoGateway(pendente.id, {
+    const registrada = await registrarCobrancaNoGateway(pendente.id, {
       provider: criada.provider,
       providerChargeId: criada.providerChargeId,
       pix: criada.pix,
     });
+    await cancelarNoGateway(roteador, obsoletas);
+    return registrada;
   } catch (erro) {
     // Pode ter sido criada no gateway apesar do erro: antes de desistir, adota a que existir.
     if (erro instanceof FalhaIncertaError && erro.provider) {
-      const encontrada = await roteador.provider(erro.provider).buscarCobrancaPorReferencia(pendente.id);
+      let encontrada: Awaited<ReturnType<PaymentProvider["buscarCobrancaPorReferencia"]>> = null;
+      try {
+        encontrada = await roteador.provider(erro.provider).buscarCobrancaPorReferencia(pendente.id);
+      } catch {
+        throw erro;
+      }
       if (encontrada) {
-        return registrarCobrancaNoGateway(pendente.id, { provider: erro.provider, ...encontrada });
+        const registrada = await registrarCobrancaNoGateway(pendente.id, { provider: erro.provider, ...encontrada });
+        await cancelarNoGateway(roteador, obsoletas);
+        return registrada;
       }
     }
     throw erro;

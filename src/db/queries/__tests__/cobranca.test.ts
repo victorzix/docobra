@@ -1,5 +1,8 @@
+import { eq } from "drizzle-orm";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
+import { db } from "@/db";
+import { cobranca } from "@/db/schema";
 import { semearCatalogoNoBancoDeTeste } from "@/db/__tests__/helpers/semear-catalogo";
 import { MS_POR_DIA } from "@/lib/permissoes/janela";
 import {
@@ -13,7 +16,9 @@ import {
   buscarCobrancaDaEmpresa,
   buscarCobrancaPendenteReutilizavel,
   buscarCobrancaPorId,
+  cancelarCobrancasPendentesObsoletas,
   criarCobrancaPendente,
+  criarCobrancaPendenteSeLivre,
   registrarCobrancaNoGateway,
 } from "../cobranca";
 
@@ -69,15 +74,16 @@ describe("queries de cobrança", () => {
   });
 
   describe("buscarCobrancaPendenteReutilizavel", () => {
-    it("devolve a pendente mais recente do mesmo tipo e plano que ainda não venceu", async () => {
+    it("devolve a pendente do mesmo tipo e plano que ainda não venceu", async () => {
       const cenario = await criarCenario();
-      await inserirCobranca(cenario);
+      await inserirCobranca(cenario, { status: "cancelada" });
       const maisRecente = await inserirCobranca(cenario);
 
       const achada = await buscarCobrancaPendenteReutilizavel({
         assinaturaId: cenario.assinaturaId,
         tipo: "assinatura",
         planoDestinoId: await idDoPlano("essencial"),
+        valorCentavos: 9900,
         agora: AGORA,
       });
 
@@ -95,10 +101,70 @@ describe("queries de cobrança", () => {
         assinaturaId: cenario.assinaturaId,
         tipo: "assinatura",
         planoDestinoId: await idDoPlano("essencial"),
+        valorCentavos: 9900,
         agora: AGORA,
       });
 
       expect(achada).toBeNull();
+    });
+
+    it("ignora pendente com valor diferente ou com Pix já expirado, mas aceita Pix ainda válido", async () => {
+      const cenario = await criarCenario();
+      const filtro = async () =>
+        buscarCobrancaPendenteReutilizavel({
+          assinaturaId: cenario.assinaturaId,
+          tipo: "assinatura",
+          planoDestinoId: await idDoPlano("essencial"),
+          valorCentavos: 9900,
+          agora: AGORA,
+        });
+
+      const outroValor = await inserirCobranca(cenario, { valorCentavos: 5000 });
+      expect(await filtro()).toBeNull();
+      await db.delete(cobranca).where(eq(cobranca.id, outroValor.id));
+
+      const expirada = await inserirCobranca(cenario, { pixExpiraEm: new Date(AGORA.getTime() - 1000) });
+      expect(await filtro()).toBeNull();
+      await db.delete(cobranca).where(eq(cobranca.id, expirada.id));
+
+      const valida = await inserirCobranca(cenario, { pixExpiraEm: new Date(AGORA.getTime() + 1000) });
+      expect((await filtro())?.id).toBe(valida.id);
+    });
+  });
+
+  describe("cancelarCobrancasPendentesObsoletas e criarCobrancaPendenteSeLivre", () => {
+    it("cancela só as pendentes não reutilizáveis da mesma chave e devolve as canceladas", async () => {
+      const cenario = await criarCenario();
+      const planoDestinoId = await idDoPlano("essencial");
+      const velha = await inserirCobranca(cenario, { valorCentavos: 5000 });
+      const outroTipo = await inserirCobranca(cenario, { tipo: "upgrade", valorCentavos: 5000 });
+
+      const canceladas = await cancelarCobrancasPendentesObsoletas({
+        assinaturaId: cenario.assinaturaId,
+        tipo: "assinatura",
+        planoDestinoId,
+        valorCentavos: 9900,
+        agora: AGORA,
+      });
+
+      expect(canceladas.map((c) => c.id)).toEqual([velha.id]);
+      expect((await buscarCobrancaPorId(velha.id))?.status).toBe("cancelada");
+      expect((await buscarCobrancaPorId(outroTipo.id))?.status).toBe("pendente");
+    });
+
+    it("não cria segunda pendente para a mesma chave", async () => {
+      const cenario = await criarCenario();
+      const dados = {
+        assinaturaId: cenario.assinaturaId,
+        empresaId: cenario.empresaId,
+        tipo: "assinatura" as const,
+        planoDestinoId: await idDoPlano("essencial"),
+        valorCentavos: 9900,
+        venceEm: new Date(AGORA.getTime() + 3 * MS_POR_DIA),
+      };
+
+      expect(await criarCobrancaPendenteSeLivre(dados)).not.toBeNull();
+      expect(await criarCobrancaPendenteSeLivre(dados)).toBeNull();
     });
   });
 });

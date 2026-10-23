@@ -1,4 +1,4 @@
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, not, or } from "drizzle-orm";
 
 import type { CobrancaCriada } from "@/core/payments/types";
 import { db } from "@/db";
@@ -18,6 +18,33 @@ export async function criarCobrancaPendente(dados: {
   return criada;
 }
 
+export async function criarCobrancaPendenteSeLivre(dados: Parameters<typeof criarCobrancaPendente>[0]): Promise<Cobranca | null> {
+  const [criada] = await db.insert(cobranca).values(dados).onConflictDoNothing().returning();
+  return criada ?? null;
+}
+
+export async function cancelarCobrancasPendentesObsoletas(filtro: {
+  assinaturaId: string;
+  tipo: TipoCobranca;
+  planoDestinoId: string;
+  valorCentavos: number;
+  agora: Date;
+}): Promise<Cobranca[]> {
+  return db
+    .update(cobranca)
+    .set({ status: "cancelada", updatedAt: filtro.agora })
+    .where(
+      and(
+        eq(cobranca.assinaturaId, filtro.assinaturaId),
+        eq(cobranca.tipo, filtro.tipo),
+        eq(cobranca.planoDestinoId, filtro.planoDestinoId),
+        eq(cobranca.status, "pendente"),
+        not(condicaoReutilizavel(filtro)!),
+      ),
+    )
+    .returning();
+}
+
 export async function buscarCobrancaPorId(id: string): Promise<Cobranca | null> {
   const [linha] = await db.select().from(cobranca).where(eq(cobranca.id, id)).limit(1);
   return linha ?? null;
@@ -32,10 +59,19 @@ export async function buscarCobrancaDaEmpresa(id: string, empresaId: string): Pr
   return linha ?? null;
 }
 
+function condicaoReutilizavel(filtro: { valorCentavos: number; agora: Date }) {
+  return and(
+    eq(cobranca.valorCentavos, filtro.valorCentavos),
+    gt(cobranca.venceEm, filtro.agora),
+    or(isNull(cobranca.pixExpiraEm), gt(cobranca.pixExpiraEm, filtro.agora)),
+  );
+}
+
 export async function buscarCobrancaPendenteReutilizavel(filtro: {
   assinaturaId: string;
   tipo: TipoCobranca;
   planoDestinoId: string;
+  valorCentavos: number;
   agora: Date;
 }): Promise<Cobranca | null> {
   const [linha] = await db
@@ -47,7 +83,7 @@ export async function buscarCobrancaPendenteReutilizavel(filtro: {
         eq(cobranca.tipo, filtro.tipo),
         eq(cobranca.planoDestinoId, filtro.planoDestinoId),
         eq(cobranca.status, "pendente"),
-        gt(cobranca.venceEm, filtro.agora),
+        condicaoReutilizavel(filtro),
       ),
     )
     .orderBy(desc(cobranca.createdAt))

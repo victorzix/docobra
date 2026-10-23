@@ -68,8 +68,18 @@ describe("schema de pagamentos", () => {
     await db.insert(cobranca).values(comGateway);
     await expect(db.insert(cobranca).values(comGateway)).rejects.toThrow();
 
+    await db.insert(cobranca).values({ ...dadosDeCobranca(base), tipo: "upgrade" });
+    await db.insert(cobranca).values({ ...dadosDeCobranca(base), tipo: "renovacao" });
+  });
+
+  it("rejeita duas pendentes com o mesmo (assinatura, tipo, plano), mas aceita pendente com paga ou cancelada", async () => {
+    const base = await criarBase();
+
     await db.insert(cobranca).values(dadosDeCobranca(base));
-    await db.insert(cobranca).values(dadosDeCobranca(base));
+    await expect(db.insert(cobranca).values(dadosDeCobranca(base))).rejects.toThrow();
+
+    await db.insert(cobranca).values({ ...dadosDeCobranca(base), status: "paga" });
+    await db.insert(cobranca).values({ ...dadosDeCobranca(base), status: "cancelada" });
   });
 
   it("cliente_gateway tem uma linha por (empresa, provider)", async () => {

@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { index, integer, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 
 import { assinatura } from "./assinatura";
@@ -35,6 +36,9 @@ export const cobranca = pgTable(
   },
   (table) => [
     uniqueIndex("cobranca_provider_charge").on(table.provider, table.providerChargeId),
+    uniqueIndex("cobranca_pendente_unica")
+      .on(table.assinaturaId, table.tipo, table.planoDestinoId)
+      .where(sql`${table.status} = 'pendente'`),
     index("cobranca_assinatura_status").on(table.assinaturaId, table.status),
   ],
 );

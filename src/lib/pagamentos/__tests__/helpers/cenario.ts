@@ -75,6 +75,7 @@ export async function inserirCobranca(
     provider?: string | null;
     providerChargeId?: string | null;
     venceEm?: Date;
+    pixExpiraEm?: Date | null;
   } = {},
 ) {
   const [criada] = await db
@@ -89,6 +90,7 @@ export async function inserirCobranca(
       venceEm: opcoes.venceEm ?? new Date(AGORA.getTime() + 3 * MS_POR_DIA),
       provider: opcoes.provider === undefined ? "asaas" : opcoes.provider,
       providerChargeId: opcoes.providerChargeId === undefined ? `pay_${randomUUID()}` : opcoes.providerChargeId,
+      pixExpiraEm: opcoes.pixExpiraEm ?? null,
     })
     .returning();
   return criada;
