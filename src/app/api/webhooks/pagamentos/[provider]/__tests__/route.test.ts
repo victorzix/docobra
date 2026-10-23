@@ -45,6 +45,21 @@ describe("POST /api/webhooks/pagamentos/[provider]", () => {
     expect(resposta.status).toBe(404);
   });
 
+  it("configuração de pagamento ausente: 500, não 404", async () => {
+    vi.stubEnv("ASAAS_API_KEY", "");
+    reiniciarPagamentoRouterParaTestes();
+    const erroDoConsole = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      const resposta = await chamar(requisicao(eventoAsaas("PAYMENT_RECEIVED", { id: "pay_1" })));
+
+      expect(resposta.status).toBe(500);
+      expect(erroDoConsole).toHaveBeenCalled();
+    } finally {
+      erroDoConsole.mockRestore();
+    }
+  });
+
   it("token errado ou ausente: 401, sem processar", async () => {
     const corpo = eventoAsaas("PAYMENT_RECEIVED", { id: "pay_1" });
 

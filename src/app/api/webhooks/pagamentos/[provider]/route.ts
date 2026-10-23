@@ -2,14 +2,23 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { pagamentoRouter } from "@/core/payments";
 import { WebhookInvalidoError, WebhookNaoAutenticadoError } from "@/core/payments/erros";
+import type { PaymentProvider } from "@/core/payments/types";
 import { processarEventoPagamento } from "@/lib/pagamentos/processar-evento";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ provider: string }> }) {
   const { provider: nomeDoProvider } = await params;
 
-  let provider;
+  let roteador;
   try {
-    provider = pagamentoRouter().provider(nomeDoProvider);
+    roteador = pagamentoRouter();
+  } catch (erro) {
+    console.error("[POST /api/webhooks/pagamentos] configuração de pagamento inválida", erro);
+    return NextResponse.json({ error: "Pagamentos não configurados." }, { status: 500 });
+  }
+
+  let provider: PaymentProvider;
+  try {
+    provider = roteador.provider(nomeDoProvider);
   } catch {
     return NextResponse.json({ error: "Provider desconhecido." }, { status: 404 });
   }
