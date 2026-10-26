@@ -9,8 +9,8 @@ import {
 import { podeCancelarAssinatura } from "@/lib/pagamentos/cancelar-assinatura";
 import { CICLO_MENSAL_DIAS } from "@/lib/pagamentos/ciclo-mensal";
 import { valorMinimoDoAmbiente } from "@/lib/pagamentos/iniciar-cobranca";
-import { MS_POR_DIA } from "@/lib/permissoes/janela";
 import { derivarStatus, type StatusEfetivo } from "@/lib/permissoes/status-assinatura";
+import { diasRestantesAte } from "./dias-restantes";
 import { descreverLimitesDoPlano } from "./descrever-limites";
 
 export type AcaoDoPlano = "assinar" | "renovar" | "upgrade" | "downgrade" | "suporte" | "atual" | "reativar" | "em_breve";
@@ -85,7 +85,7 @@ export async function carregarTelaDePlanos(empresaId: string, agora: Date = new 
 
   const [atual, publicos] = await Promise.all([buscarPlanoDoCatalogo(vigente.planoChave), listarPlanosPublicos()]);
   const status = derivarStatus(vigente, agora);
-  const diasRestantes = Math.max(0, Math.ceil((vigente.venceEm.getTime() - agora.getTime()) / MS_POR_DIA));
+  const diasRestantes = diasRestantesAte(vigente.venceEm, agora);
   const contexto: Contexto = {
     vigente,
     atual: atual as PlanoDoCatalogo,
