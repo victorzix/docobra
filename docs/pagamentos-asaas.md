@@ -60,6 +60,13 @@ cartão (o card aparece como "Em breve no cartão"); não há boleto.
 acesso até o vencimento. Reativar antes do vencimento é uma renovação: a nova cobrança
 emenda no vencimento atual.
 
+**Pagamento sem efeito**: se o cliente pagar um Pix da assinatura no instante em que cancela,
+ou se o Asaas não conseguir cancelar o Pix pendente (o link do e-mail continua pagável), o
+webhook registra `pagamento_sem_efeito` (log `console.warn`) e o dinheiro entra sem crédito
+no plano. Vale vigiar esse log e estornar ou creditar à mão. Reativar uma assinatura
+cancelada num plano diferente do atual passa por "assinar" e recomeça o ciclo (perde os dias
+restantes).
+
 **Operação local**: no `.env` de desenvolvimento, escape o `$` inicial da chave do Asaas
 (`ASAAS_API_KEY="\$aact_..."`), porque o Next expande `$`. Em produção (Coolify) não precisa.
 

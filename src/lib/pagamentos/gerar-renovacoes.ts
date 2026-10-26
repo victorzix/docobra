@@ -42,6 +42,7 @@ export async function gerarRenovacoes({
       await iniciarCobranca({ empresaId, tipo: "renovacao", agora, roteador });
       resumo.garantidas += 1;
     } catch (erro) {
+      // Plano que não é mensal será pago no cartão: não é trabalho do cron de Pix, nem falha.
       if (erro instanceof CobrancaNaoPermitidaError && erro.motivo === "pix_somente_mensal") continue;
       if (erro instanceof DocumentoAusenteError) {
         resumo.semDocumento += 1;
