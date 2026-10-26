@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { assinatura } from "@/db/schema";
 import { MS_POR_DIA } from "@/lib/permissoes/janela";
 import { CARENCIA_DIAS_PADRAO } from "@/lib/permissoes/status-assinatura";
-import { DocumentoAusenteError, iniciarCobranca } from "./iniciar-cobranca";
+import { CobrancaNaoPermitidaError, DocumentoAusenteError, iniciarCobranca } from "./iniciar-cobranca";
 
 export interface ResumoRenovacoes {
   garantidas: number;
@@ -42,6 +42,7 @@ export async function gerarRenovacoes({
       await iniciarCobranca({ empresaId, tipo: "renovacao", agora, roteador });
       resumo.garantidas += 1;
     } catch (erro) {
+      if (erro instanceof CobrancaNaoPermitidaError && erro.motivo === "pix_somente_mensal") continue;
       if (erro instanceof DocumentoAusenteError) {
         resumo.semDocumento += 1;
       } else {

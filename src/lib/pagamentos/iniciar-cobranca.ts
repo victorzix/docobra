@@ -18,6 +18,7 @@ import {
 import { buscarPlanoDoCatalogo, type PlanoDoCatalogo } from "@/db/queries/plano";
 import { empresa, usuario, type TipoCobranca } from "@/db/schema";
 import { rotuloDaPeriodicidade } from "@/lib/formatar";
+import { CICLO_MENSAL_DIAS } from "@/lib/pagamentos/ciclo-mensal";
 import { mascararDocumento } from "@/lib/pagamentos/documento";
 import { MS_POR_DIA } from "@/lib/permissoes/janela";
 import { derivarStatus, type StatusEfetivo } from "@/lib/permissoes/status-assinatura";
@@ -103,6 +104,13 @@ function exigirPlanoPublico(destino: PlanoDoCatalogo | null): PlanoDoCatalogo {
   return destino;
 }
 
+function exigirCicloMensal(plano: PlanoDoCatalogo): PlanoDoCatalogo {
+  if (plano.cicloDias !== CICLO_MENSAL_DIAS) {
+    throw new CobrancaNaoPermitidaError("pix_somente_mensal", "O pagamento por Pix está disponível apenas para planos mensais.");
+  }
+  return plano;
+}
+
 function planejar(tipo: TipoCobranca, c: Contexto): Planejamento {
   if (tipo === "renovacao") {
     const renovavel =
@@ -114,10 +122,10 @@ function planejar(tipo: TipoCobranca, c: Contexto): Planejamento {
       c.vigente.venceEm.getTime() > c.agora.getTime()
         ? c.vigente.venceEm
         : emDias(c.agora, VENCIMENTO_DIAS_ASSINATURA_E_UPGRADE);
-    return { destino: c.atual, valorCentavos: c.atual.precoCentavos, venceEm };
+    return { destino: exigirCicloMensal(c.atual), valorCentavos: c.atual.precoCentavos, venceEm };
   }
 
-  const destino = exigirPlanoPublico(c.destinoSolicitado);
+  const destino = exigirCicloMensal(exigirPlanoPublico(c.destinoSolicitado));
 
   if (tipo === "assinatura") {
     const livre =

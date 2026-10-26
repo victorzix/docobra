@@ -22,13 +22,13 @@ describe("proximoVencimento", () => {
 });
 
 describe("dataDeGeracaoDaRenovacao", () => {
-  it("por padrão gera a cobrança 5 dias antes do vencimento", () => {
-    expect(ANTECEDENCIA_RENOVACAO_DIAS_PADRAO).toBe(5);
-    expect(dataDeGeracaoDaRenovacao(VENCE_EM)).toEqual(emDias(-5));
+  it("por padrão gera a cobrança 10 dias antes do vencimento", () => {
+    expect(ANTECEDENCIA_RENOVACAO_DIAS_PADRAO).toBe(10);
+    expect(dataDeGeracaoDaRenovacao(VENCE_EM)).toEqual(emDias(-10));
   });
 
   it("aceita uma antecedência customizada", () => {
-    expect(dataDeGeracaoDaRenovacao(VENCE_EM, 10)).toEqual(emDias(-10));
+    expect(dataDeGeracaoDaRenovacao(VENCE_EM, 15)).toEqual(emDias(-15));
   });
 });
 

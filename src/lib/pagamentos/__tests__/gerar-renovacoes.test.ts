@@ -1,14 +1,16 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { eq } from "drizzle-orm";
+
 import { PaymentRouter } from "@/core/payments";
 import { FalhaIncertaError } from "@/core/payments/erros";
 import { criarProvedorFalso } from "@/core/payments/__tests__/helpers/provedor-falso";
 import { db } from "@/db";
 import { semearCatalogoNoBancoDeTeste } from "@/db/__tests__/helpers/semear-catalogo";
-import { cobranca } from "@/db/schema";
+import { assinaturaTrecho, cobranca, plano } from "@/db/schema";
 import { MS_POR_DIA } from "@/lib/permissoes/janela";
 import { gerarRenovacoes } from "../gerar-renovacoes";
-import { AGORA, criarCenario, limparCenarios } from "./helpers/cenario";
+import { AGORA, criarCenario, idDoPlano, limparCenarios } from "./helpers/cenario";
 
 const emDias = (dias: number) => new Date(AGORA.getTime() + dias * MS_POR_DIA);
 
@@ -59,7 +61,7 @@ describe("gerarRenovacoes", () => {
   });
 
   it("ignora quem vence depois da antecedência, quem já está suspenso, trial e cancelada", async () => {
-    await ativaVencendoEm(10, "longe@x.com");
+    await ativaVencendoEm(12, "longe@x.com");
     await ativaVencendoEm(-8, "suspensa@x.com");
     await criarCenario({ email: "trial@x.com" });
     await criarCenario({ planoChave: "essencial", status: "cancelada", inicio: emDias(-27), venceEm: emDias(3), email: "cancelada@x.com" });
@@ -72,11 +74,11 @@ describe("gerarRenovacoes", () => {
   });
 
   it("respeita uma antecedência customizada", async () => {
-    await ativaVencendoEm(8, "a@x.com");
+    await ativaVencendoEm(12, "a@x.com");
     const roteador = new PaymentRouter([criarProvedorFalso("asaas")]);
 
     expect((await gerarRenovacoes({ agora: AGORA, roteador })).garantidas).toBe(0);
-    expect((await gerarRenovacoes({ agora: AGORA, roteador, antecedenciaDias: 10 })).garantidas).toBe(1);
+    expect((await gerarRenovacoes({ agora: AGORA, roteador, antecedenciaDias: 15 })).garantidas).toBe(1);
   });
 
   it("conta empresas sem CPF/CNPJ e segue com as outras", async () => {
@@ -99,5 +101,33 @@ describe("gerarRenovacoes", () => {
 
     expect(resumo).toEqual({ garantidas: 1, semDocumento: 0, falhas: 1 });
     erroNoConsole.mockRestore();
+  });
+
+  it("ignora assinatura de plano que não é mensal", async () => {
+    const cenario = await ativaVencendoEm(3, "anual@x.com");
+    const provedor = criarProvedorFalso("asaas");
+    try {
+      await db.insert(plano).values({
+        chave: "anual-teste",
+        nome: "Anual teste",
+        nivel: 5,
+        cicloDias: 360,
+        precoCentavos: 90000,
+        ativo: true,
+        interno: false,
+      });
+      const [anual] = await db.select().from(plano).where(eq(plano.chave, "anual-teste"));
+      await db.update(assinaturaTrecho).set({ planoId: anual.id }).where(eq(assinaturaTrecho.assinaturaId, cenario.assinaturaId));
+
+      const resumo = await gerarRenovacoes({ agora: AGORA, roteador: new PaymentRouter([provedor]) });
+
+      expect(resumo).toEqual({ garantidas: 0, semDocumento: 0, falhas: 0 });
+      expect(provedor.criarCobranca).not.toHaveBeenCalled();
+    } finally {
+      await db.update(assinaturaTrecho).set({ planoId: await idDoPlano("essencial") }).where(eq(assinaturaTrecho.assinaturaId, cenario.assinaturaId));
+      const [anual] = await db.select({ id: plano.id }).from(plano).where(eq(plano.chave, "anual-teste"));
+      if (anual) await db.delete(cobranca).where(eq(cobranca.planoDestinoId, anual.id));
+      await db.delete(plano).where(eq(plano.chave, "anual-teste"));
+    }
   });
 });

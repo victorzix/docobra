@@ -1,7 +1,7 @@
 import { MS_POR_DIA } from "@/lib/permissoes/janela";
 import type { PlanoCobravel } from "./upgrade";
 
-export const ANTECEDENCIA_RENOVACAO_DIAS_PADRAO = 5;
+export const ANTECEDENCIA_RENOVACAO_DIAS_PADRAO = 10;
 
 export function proximoVencimento(venceEm: Date, cicloDias: number): Date {
   return new Date(venceEm.getTime() + cicloDias * MS_POR_DIA);

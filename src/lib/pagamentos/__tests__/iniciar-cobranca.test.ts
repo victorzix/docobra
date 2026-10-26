@@ -7,7 +7,7 @@ import { criarProvedorFalso } from "@/core/payments/__tests__/helpers/provedor-f
 import { db } from "@/db";
 import { semearCatalogoNoBancoDeTeste } from "@/db/__tests__/helpers/semear-catalogo";
 import { buscarProviderClienteId } from "@/db/queries/cliente-gateway";
-import { cobranca } from "@/db/schema";
+import { cobranca, plano } from "@/db/schema";
 import { MS_POR_DIA } from "@/lib/permissoes/janela";
 import {
   CobrancaNaoPermitidaError,
@@ -38,6 +38,36 @@ describe("iniciarCobranca", () => {
   afterEach(limparCenarios);
 
   describe("assinatura", () => {
+    it("recusa plano que não é mensal (Pix só mensal)", async () => {
+      const cenario = await criarCenario();
+      try {
+        await db.insert(plano).values({
+          chave: "anual-teste",
+          nome: "Anual teste",
+          nivel: 5,
+          cicloDias: 360,
+          precoCentavos: 90000,
+          ativo: true,
+          interno: false,
+        });
+
+        const erro = await iniciarCobranca({
+          empresaId: cenario.empresaId,
+          tipo: "assinatura",
+          planoDestinoChave: "anual-teste",
+          agora: AGORA,
+          roteador: new PaymentRouter([criarProvedorFalso("asaas")]),
+        }).catch((e) => e);
+
+        expect(erro).toBeInstanceOf(CobrancaNaoPermitidaError);
+        expect(erro.motivo).toBe("pix_somente_mensal");
+      } finally {
+        const [anual] = await db.select({ id: plano.id }).from(plano).where(eq(plano.chave, "anual-teste"));
+        if (anual) await db.delete(cobranca).where(eq(cobranca.planoDestinoId, anual.id));
+        await db.delete(plano).where(eq(plano.chave, "anual-teste"));
+      }
+    });
+
     it("trial → plano pago: grava a cobrança antes do gateway, cadastra o cliente e guarda o Pix", async () => {
       const cenario = await criarCenario();
       const provedor = criarProvedorFalso("asaas");
