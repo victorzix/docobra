@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Settings } from "lucide-react";
 
 import { useLogout } from "@/hooks/use-logout";
 import { Button } from "@/components/ui/button";
@@ -22,9 +24,19 @@ export function UserMenu({ usuarioNome, empresaNome }: UserMenuProps) {
 
   return (
     <div className="flex flex-col gap-2 px-2 py-1">
-      <div className="text-sm">
-        <p className="font-medium text-sidebar-foreground">{usuarioNome}</p>
-        <p className="text-xs text-sidebar-foreground/60">{empresaNome}</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 text-sm">
+          <p className="truncate font-medium text-sidebar-foreground">{usuarioNome}</p>
+          <p className="truncate text-xs text-sidebar-foreground/60">{empresaNome}</p>
+        </div>
+        <Link
+          href="/dashboard/configuracoes/assinatura"
+          aria-label="Configurações"
+          title="Configurações"
+          className="shrink-0 rounded-md p-1.5 text-sidebar-foreground/70 transition-colors hover:bg-white/10 hover:text-sidebar-foreground"
+        >
+          <Settings className="size-4" />
+        </Link>
       </div>
       {logout.isError && (
         <p className="text-xs text-orange-300">{logout.error.message}</p>

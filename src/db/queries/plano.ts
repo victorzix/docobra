@@ -33,6 +33,14 @@ export async function buscarPlanoDoCatalogoPorId(id: string): Promise<PlanoDoCat
   return linha ?? null;
 }
 
+export async function buscarLimitesDoPlano(planoId: string): Promise<LinhaDeLimite[]> {
+  return db
+    .select({ chave: permissao.chave, valor: planoPermissao.valor, janelaDias: planoPermissao.janelaDias })
+    .from(planoPermissao)
+    .innerJoin(permissao, eq(permissao.id, planoPermissao.permissaoId))
+    .where(eq(planoPermissao.planoId, planoId));
+}
+
 export interface PlanoPublico extends PlanoDoCatalogo {
   permissoes: LinhaDeLimite[];
 }

@@ -4,7 +4,7 @@ import { simularUpgrade, type MotivoRecusaUpgrade } from "@/core/billing/upgrade
 import { pagamentoRouter } from "@/core/payments";
 import { FalhaIncertaError } from "@/core/payments/erros";
 import type { PaymentRouter } from "@/core/payments/router";
-import type { PaymentProvider } from "@/core/payments/types";
+import type { CobrancaCriada, PaymentProvider } from "@/core/payments/types";
 import { db } from "@/db";
 import { buscarAssinaturaVigente, type AssinaturaVigente } from "@/db/queries/assinatura";
 import { buscarProviderClienteId, salvarProviderClienteId } from "@/db/queries/cliente-gateway";
@@ -17,6 +17,8 @@ import {
 } from "@/db/queries/cobranca";
 import { buscarPlanoDoCatalogo, type PlanoDoCatalogo } from "@/db/queries/plano";
 import { empresa, usuario, type TipoCobranca } from "@/db/schema";
+import { rotuloDaPeriodicidade } from "@/lib/formatar";
+import { mascararDocumento } from "@/lib/pagamentos/documento";
 import { MS_POR_DIA } from "@/lib/permissoes/janela";
 import { derivarStatus, type StatusEfetivo } from "@/lib/permissoes/status-assinatura";
 
@@ -28,6 +30,23 @@ const ROTULO_DO_TIPO: Record<TipoCobranca, string> = {
   upgrade: "upgrade",
   renovacao: "renovação",
 };
+
+export function montarDescricaoDaCobranca(dados: {
+  tipo: TipoCobranca;
+  planoNome: string;
+  cicloDias: number;
+  empresaNome: string;
+  documento: string;
+  email: string | null;
+}): string {
+  const partes = [
+    `DocObra — Plano ${dados.planoNome} (${rotuloDaPeriodicidade(dados.cicloDias)}) — ${ROTULO_DO_TIPO[dados.tipo]}`,
+    `Empresa: ${dados.empresaNome}`,
+    `Documento: ${mascararDocumento(dados.documento)}`,
+    ...(dados.email ? [`E-mail: ${dados.email}`] : []),
+  ];
+  return partes.join(" | ");
+}
 
 const MENSAGEM_DO_MOTIVO: Record<MotivoRecusaUpgrade | "ciclo_vencido", string> = {
   mesmo_plano: "Você já está nesse plano.",
@@ -151,6 +170,8 @@ export interface IniciarCobrancaInput {
   agora?: Date;
   roteador?: PaymentRouter;
   valorMinimoCentavos?: number;
+  // O Asaas só controla o vencimento por dia: o prazo curto do Pix é do app (ver expirar-cobranca.ts).
+  validadeDoPixMinutos?: number;
 }
 
 export async function iniciarCobranca(input: IniciarCobrancaInput): Promise<Cobranca> {
@@ -161,7 +182,14 @@ export async function iniciarCobranca(input: IniciarCobrancaInput): Promise<Cobr
     agora = new Date(),
     roteador = pagamentoRouter(),
     valorMinimoCentavos = valorMinimoDoAmbiente(),
+    validadeDoPixMinutos,
   } = input;
+
+  const comPrazo = (pix: CobrancaCriada["pix"]): CobrancaCriada["pix"] => {
+    if (!validadeDoPixMinutos) return pix;
+    const limite = new Date(agora.getTime() + validadeDoPixMinutos * 60_000);
+    return { ...pix, expiraEm: pix.expiraEm && pix.expiraEm < limite ? pix.expiraEm : limite };
+  };
 
   const [empresaEncontrada] = await db
     .select({ nome: empresa.nome, documento: empresa.documento })
@@ -238,14 +266,21 @@ export async function iniciarCobranca(input: IniciarCobrancaInput): Promise<Cobr
         referencia: pendente.id,
         valorCentavos: pendente.valorCentavos,
         venceEm: pendente.venceEm,
-        descricao: `DocObra — plano ${planejamento.destino.nome} (${ROTULO_DO_TIPO[tipo]})`,
+        descricao: montarDescricaoDaCobranca({
+          tipo,
+          planoNome: planejamento.destino.nome,
+          cicloDias: planejamento.destino.cicloDias,
+          empresaNome: empresaEncontrada.nome,
+          documento,
+          email: admin?.email ?? null,
+        }),
       },
       resolverCliente,
     );
     const registrada = await registrarCobrancaNoGateway(pendente.id, {
       provider: criada.provider,
       providerChargeId: criada.providerChargeId,
-      pix: criada.pix,
+      pix: comPrazo(criada.pix),
     });
     return registrada;
   } catch (erro) {
@@ -258,7 +293,11 @@ export async function iniciarCobranca(input: IniciarCobrancaInput): Promise<Cobr
         throw erro;
       }
       if (encontrada) {
-        const registrada = await registrarCobrancaNoGateway(pendente.id, { provider: erro.provider, ...encontrada });
+        const registrada = await registrarCobrancaNoGateway(pendente.id, {
+          provider: erro.provider,
+          ...encontrada,
+          pix: comPrazo(encontrada.pix),
+        });
         return registrada;
       }
     }

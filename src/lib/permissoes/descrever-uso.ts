@@ -29,12 +29,13 @@ export function descreverUso(
     return { estado: "ilimitado", texto: "Sem limite no seu plano", percentual: null };
   }
 
-  const texto = `${permissao.usado} de ${permissao.limite} ${unidade}${textoRenovacao(permissao.renovaEm, agora)}`;
+  const disponivel = permissao.permitido ? Math.max(0, permissao.limite - permissao.usado) : 0;
+  const texto = `${disponivel} de ${permissao.limite} ${unidade} disponíveis${textoRenovacao(permissao.renovaEm, agora)}`;
   if (!permissao.permitido) {
-    return { estado: "estourado", texto, percentual: 100 };
+    return { estado: "estourado", texto, percentual: 0 };
   }
 
-  const percentual = Math.min(100, Math.round((permissao.usado / permissao.limite) * 100));
+  const percentual = Math.round((disponivel / permissao.limite) * 100);
   const perto = permissao.restante !== null && permissao.restante / permissao.limite <= LIMIAR_PERTO;
   return { estado: perto ? "perto" : "normal", texto, percentual };
 }

@@ -14,11 +14,12 @@ async function buscarCobranca(id: string): Promise<CobrancaResponse> {
   return (await response.json()).cobranca;
 }
 
-export function useCobranca(id: string | null, inicial?: CobrancaResponse) {
+// `ativo` false para o polling quando o diálogo fecha, sem trocar a chave (os dados ficam para a animação de saída).
+export function useCobranca(id: string | null, inicial?: CobrancaResponse, ativo = true) {
   return useQuery({
     queryKey: ["cobranca", id],
     queryFn: () => buscarCobranca(id as string),
-    enabled: id !== null,
+    enabled: id !== null && ativo,
     initialData: inicial,
     refetchInterval: (query) => (query.state.data?.status === "pendente" ? INTERVALO_DO_POLLING_MS : false),
   });

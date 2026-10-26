@@ -74,9 +74,54 @@ describe("iniciarCobranca", () => {
         referencia: criada.id,
         valorCentavos: 9900,
         venceEm: emDias(3),
-        descricao: "DocObra — plano Essencial (assinatura)",
+        descricao:
+          "DocObra — Plano Essencial (mensal) — assinatura | Empresa: Empresa Cobranca | Documento: 12.345.678/0001-99 | E-mail: admin@cobranca.com",
       });
       expect(await buscarProviderClienteId(cenario.empresaId, "asaas")).toBe("cliente-asaas");
+    });
+
+    it("com validade do Pix: o prazo do app vale quando o gateway não dá um menor", async () => {
+      const cenario = await criarCenario();
+      const provedor = criarProvedorFalso("asaas");
+      vi.mocked(provedor.criarCobranca).mockResolvedValue({
+        providerChargeId: "pay_1",
+        pix: { copiaECola: "c", qrCodeBase64: "q", expiraEm: emDias(30) },
+      });
+
+      const criada = await iniciarCobranca({
+        empresaId: cenario.empresaId,
+        tipo: "assinatura",
+        planoDestinoChave: "essencial",
+        agora: AGORA,
+        roteador: new PaymentRouter([provedor]),
+        validadeDoPixMinutos: 25,
+      });
+
+      expect(criada.pixExpiraEm).toEqual(new Date(AGORA.getTime() + 25 * 60_000));
+    });
+
+    it("com validade do Pix: Pix expirado não é reaproveitado, gera um novo e cancela o velho", async () => {
+      const cenario = await criarCenario();
+      const provedor = criarProvedorFalso("asaas");
+      vi.mocked(provedor.criarCobranca)
+        .mockResolvedValueOnce({ providerChargeId: "pay_1", pix: { copiaECola: "c1", qrCodeBase64: "q", expiraEm: null } })
+        .mockResolvedValueOnce({ providerChargeId: "pay_2", pix: { copiaECola: "c2", qrCodeBase64: "q", expiraEm: null } });
+      const dados = {
+        empresaId: cenario.empresaId,
+        tipo: "assinatura" as const,
+        planoDestinoChave: "essencial",
+        roteador: new PaymentRouter([provedor]),
+        validadeDoPixMinutos: 25,
+      };
+
+      const primeira = await iniciarCobranca({ ...dados, agora: AGORA });
+      const dentroDoPrazo = await iniciarCobranca({ ...dados, agora: new Date(AGORA.getTime() + 10 * 60_000) });
+      const depoisDoPrazo = await iniciarCobranca({ ...dados, agora: new Date(AGORA.getTime() + 26 * 60_000) });
+
+      expect(dentroDoPrazo.id).toBe(primeira.id);
+      expect(depoisDoPrazo.id).not.toBe(primeira.id);
+      expect(depoisDoPrazo.providerChargeId).toBe("pay_2");
+      expect(provedor.cancelarCobranca).toHaveBeenCalledWith("pay_1");
     });
 
     it("reaproveita a cobrança pendente igual, sem falar de novo com o gateway", async () => {

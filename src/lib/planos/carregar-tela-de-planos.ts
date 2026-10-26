@@ -1,13 +1,17 @@
 import { ANTECEDENCIA_RENOVACAO_DIAS_PADRAO } from "@/core/billing/renovacao";
 import { simularUpgrade } from "@/core/billing/upgrade";
 import { buscarAssinaturaVigente, type AssinaturaVigente } from "@/db/queries/assinatura";
-import { buscarPlanoDoCatalogo, listarPlanosPublicos, type PlanoDoCatalogo, type PlanoPublico } from "@/db/queries/plano";
+import {
+  buscarLimitesDoPlano,
+  buscarPlanoDoCatalogo,
+  listarPlanosPublicos, type PlanoDoCatalogo, type PlanoPublico,
+} from "@/db/queries/plano";
 import { valorMinimoDoAmbiente } from "@/lib/pagamentos/iniciar-cobranca";
 import { MS_POR_DIA } from "@/lib/permissoes/janela";
 import { derivarStatus, type StatusEfetivo } from "@/lib/permissoes/status-assinatura";
 import { descreverLimitesDoPlano } from "./descrever-limites";
 
-export type AcaoDoPlano = "assinar" | "renovar" | "upgrade" | "suporte" | "atual";
+export type AcaoDoPlano = "assinar" | "renovar" | "upgrade" | "downgrade" | "suporte" | "atual";
 
 export interface PlanoDaTela {
   chave: string;
@@ -15,12 +19,14 @@ export interface PlanoDaTela {
   precoCentavos: number;
   cicloDias: number;
   limites: string[];
+  ehAtual: boolean;
   acao: AcaoDoPlano;
   valorUpgradeCentavos: number | null;
 }
 
 export interface AssinaturaDaTela {
   planoNome: string;
+  ehTrial: boolean;
   status: StatusEfetivo;
   venceEm: string;
   diasRestantes: number;
@@ -53,6 +59,8 @@ function decidirAcao(destino: PlanoPublico, c: Contexto): Pick<PlanoDaTela, "aca
     return sem(naJanela ? "renovar" : "atual");
   }
 
+  if (destino.nivel < c.atual.nivel) return sem("downgrade");
+
   if (c.status === "ativa") {
     const simulacao = simularUpgrade({ atual: c.atual, destino, venceEm: c.vigente.venceEm, agora: c.agora });
     if (simulacao.ok) {
@@ -78,15 +86,38 @@ export async function carregarTelaDePlanos(empresaId: string, agora: Date = new 
     valorMinimoCentavos: valorMinimoDoAmbiente(),
   };
 
+  const planos: PlanoDaTela[] = publicos.map((p) => ({
+    chave: p.chave,
+    nome: p.nome,
+    precoCentavos: p.precoCentavos,
+    cicloDias: p.cicloDias,
+    limites: descreverLimitesDoPlano(p.permissoes),
+    ehAtual: p.chave === contexto.atual.chave,
+    ...decidirAcao(p, contexto),
+  }));
+
+  // Teste gratuito e planos internos não são vendidos, mas o cliente precisa se ver na lista.
+  if (!planos.some((p) => p.ehAtual)) {
+    planos.unshift({
+      chave: contexto.atual.chave,
+      nome: contexto.atual.chave === "trial" ? "Teste gratuito" : contexto.atual.nome,
+      precoCentavos: contexto.atual.precoCentavos,
+      cicloDias: contexto.atual.cicloDias,
+      limites: descreverLimitesDoPlano(await buscarLimitesDoPlano(contexto.atual.id)),
+      ehAtual: true,
+      acao: "atual",
+      valorUpgradeCentavos: null,
+    });
+  }
+
   return {
-    assinatura: { planoNome: contexto.atual.nome, status, venceEm: vigente.venceEm.toISOString(), diasRestantes },
-    planos: publicos.map((p) => ({
-      chave: p.chave,
-      nome: p.nome,
-      precoCentavos: p.precoCentavos,
-      cicloDias: p.cicloDias,
-      limites: descreverLimitesDoPlano(p.permissoes),
-      ...decidirAcao(p, contexto),
-    })),
+    assinatura: {
+      planoNome: contexto.atual.nome,
+      ehTrial: contexto.atual.chave === "trial",
+      status,
+      venceEm: vigente.venceEm.toISOString(),
+      diasRestantes,
+    },
+    planos,
   };
 }

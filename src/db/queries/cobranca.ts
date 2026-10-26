@@ -45,6 +45,15 @@ export async function cancelarCobrancasPendentesObsoletas(filtro: {
     .returning();
 }
 
+export async function cancelarCobrancaPendente(id: string, agora: Date): Promise<Cobranca | null> {
+  const [linha] = await db
+    .update(cobranca)
+    .set({ status: "cancelada", updatedAt: agora })
+    .where(and(eq(cobranca.id, id), eq(cobranca.status, "pendente")))
+    .returning();
+  return linha ?? null;
+}
+
 export async function buscarCobrancaPorId(id: string): Promise<Cobranca | null> {
   const [linha] = await db.select().from(cobranca).where(eq(cobranca.id, id)).limit(1);
   return linha ?? null;

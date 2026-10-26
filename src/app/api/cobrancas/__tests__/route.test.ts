@@ -1,3 +1,4 @@
+import { VALIDADE_DO_PIX_MINUTOS } from "@/lib/pagamentos/validade-do-pix";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
@@ -89,6 +90,7 @@ describe("POST /api/cobrancas", () => {
       empresaId: cenario.empresaId,
       tipo: "assinatura",
       planoDestinoChave: "essencial",
+      validadeDoPixMinutos: VALIDADE_DO_PIX_MINUTOS,
     });
   });
 
@@ -102,6 +104,7 @@ describe("POST /api/cobrancas", () => {
       empresaId: cenario.empresaId,
       tipo: "renovacao",
       planoDestinoChave: undefined,
+      validadeDoPixMinutos: VALIDADE_DO_PIX_MINUTOS,
     });
   });
 

@@ -27,23 +27,39 @@ describe("carregarTelaDePlanos", () => {
     expect(await carregarTelaDePlanos(semAssinatura.id, AGORA)).toBeNull();
   });
 
-  it("lista só os planos públicos, em ordem, com preço, ciclo e limites", async () => {
-    const cenario = await criarCenario({ venceEm: emDias(9) });
+  it("lista os planos públicos, em ordem, com preço, ciclo e limites", async () => {
+    const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", venceEm: emDias(20) });
     const tela = await carregarTelaDePlanos(cenario.empresaId, AGORA);
 
     expect(tela?.planos.map((p) => p.chave)).toEqual(["essencial", "escritorio"]);
-    expect(tela?.planos[0]).toMatchObject({ nome: "Essencial", precoCentavos: 9900, cicloDias: 30 });
+    expect(tela?.planos[0]).toMatchObject({ nome: "Essencial", precoCentavos: 9900, cicloDias: 30, ehAtual: true });
     expect(tela?.planos[0].limites).toContain("20 memoriais por mês");
+    expect(tela?.planos[1]).toMatchObject({ ehAtual: false });
     expect(tela?.planos[1].limites).toContain("Projetos ilimitados");
   });
 
-  it("trial: todos os planos são 'assinar' e o resumo traz os dias restantes", async () => {
+  it("trial: o teste gratuito aparece primeiro na lista como o plano atual", async () => {
     const cenario = await criarCenario({ venceEm: emDias(9) });
-    expect(await acoes(cenario.empresaId)).toEqual({ essencial: "assinar", escritorio: "assinar" });
+    const tela = await carregarTelaDePlanos(cenario.empresaId, AGORA);
+
+    expect(tela?.planos[0]).toMatchObject({
+      chave: "trial",
+      nome: "Teste gratuito",
+      precoCentavos: 0,
+      ehAtual: true,
+      acao: "atual",
+    });
+    expect(tela?.planos[0].limites).toContain("3 memoriais a cada 14 dias");
+  });
+
+  it("trial: os planos pagos são 'assinar' e o resumo traz os dias restantes", async () => {
+    const cenario = await criarCenario({ venceEm: emDias(9) });
+    expect(await acoes(cenario.empresaId)).toEqual({ trial: "atual", essencial: "assinar", escritorio: "assinar" });
 
     const tela = await carregarTelaDePlanos(cenario.empresaId, AGORA);
     expect(tela?.assinatura).toEqual({
       planoNome: "Trial",
+      ehTrial: true,
       status: "trial",
       venceEm: emDias(9).toISOString(),
       diasRestantes: 9,
@@ -99,8 +115,8 @@ describe("carregarTelaDePlanos", () => {
     expect(await acoes(cenario.empresaId)).toEqual({ essencial: "assinar", escritorio: "assinar" });
   });
 
-  it("no plano mais alto, o de nível menor só pelo suporte", async () => {
+  it("no plano mais alto, o de nível menor vira downgrade (pelo suporte)", async () => {
     const cenario = await criarCenario({ planoChave: "escritorio", status: "ativa", venceEm: emDias(20) });
-    expect(await acoes(cenario.empresaId)).toEqual({ essencial: "suporte", escritorio: "atual" });
+    expect(await acoes(cenario.empresaId)).toEqual({ essencial: "downgrade", escritorio: "atual" });
   });
 });

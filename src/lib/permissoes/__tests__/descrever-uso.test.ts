@@ -12,11 +12,11 @@ function limite(usado: number, valor: number, renovaEm: string | null = emDias(8
 }
 
 describe("descreverUso", () => {
-  it("normal: mostra usado de limite e quando renova, com o percentual", () => {
+  it("normal: mostra o disponível do limite e quando renova, com o percentual disponível", () => {
     expect(descreverUso(limite(12, 90), "documentos", AGORA)).toEqual({
       estado: "normal",
-      texto: "12 de 90 documentos · renova em 8 dias",
-      percentual: 13,
+      texto: "78 de 90 documentos disponíveis · renova em 8 dias",
+      percentual: 87,
     });
   });
 
@@ -25,22 +25,22 @@ describe("descreverUso", () => {
     expect(descreverUso(limite(71, 90), "documentos", AGORA).estado).toBe("normal");
   });
 
-  it("estourado: cota esgotada, com 100%", () => {
+  it("estourado: cota esgotada, 0 disponíveis", () => {
     expect(descreverUso(limite(90, 90), "documentos", AGORA)).toEqual({
       estado: "estourado",
-      texto: "90 de 90 documentos · renova em 8 dias",
-      percentual: 100,
+      texto: "0 de 90 documentos disponíveis · renova em 8 dias",
+      percentual: 0,
     });
   });
 
   it("renova em 1 dia usa o singular", () => {
     expect(descreverUso(limite(1, 3, emDias(1)), "projetos", AGORA).texto).toBe(
-      "1 de 3 projetos · renova em 1 dia",
+      "2 de 3 projetos disponíveis · renova em 1 dia",
     );
   });
 
   it("sem data de renovação, não fala em renovação", () => {
-    expect(descreverUso(limite(1, 3, null), "projetos", AGORA).texto).toBe("1 de 3 projetos");
+    expect(descreverUso(limite(1, 3, null), "projetos", AGORA).texto).toBe("2 de 3 projetos disponíveis");
   });
 
   it("ilimitado: sem barra", () => {

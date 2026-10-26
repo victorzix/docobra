@@ -65,7 +65,7 @@ Troque a chave e `ASAAS_BASE_URL`, recrie o webhook na conta de produção com u
 
 ## 6. Lançamento (checklist)
 
-Faça nesta ordem; a tela `/dashboard/planos` já existe, mas só cobra de verdade com as chaves de produção.
+Faça nesta ordem; a tela `/dashboard/configuracoes/assinatura` já existe, mas só cobra de verdade com as chaves de produção.
 
 1. **Conta e webhook**: `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` e o webhook apontando para
    `/api/webhooks/pagamentos/asaas` (sandbox para validar; troque por produção ao lançar,

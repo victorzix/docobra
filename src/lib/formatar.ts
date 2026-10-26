@@ -12,6 +12,12 @@ export function formatarData(iso: string): string {
   return dataCurta.format(new Date(iso));
 }
 
+export function rotuloDaPeriodicidade(cicloDias: number): string {
+  if (cicloDias === 30) return "mensal";
+  if (cicloDias === 360) return "anual";
+  return `${cicloDias} dias`;
+}
+
 export function rotuloDoCiclo(cicloDias: number): string {
   if (cicloDias === 30) return "mês";
   if (cicloDias === 360) return "ano";

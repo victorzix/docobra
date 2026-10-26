@@ -8,6 +8,7 @@ import {
   DocumentoAusenteError,
   iniciarCobranca,
 } from "@/lib/pagamentos/iniciar-cobranca";
+import { VALIDADE_DO_PIX_MINUTOS } from "@/lib/pagamentos/validade-do-pix";
 import { serializarCobranca } from "@/lib/pagamentos/serializar-cobranca";
 import { criarCobrancaSchema } from "@/lib/validations/cobranca/create.schema";
 
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
       empresaId: sessao.empresaId,
       tipo: parsed.data.tipo,
       planoDestinoChave: parsed.data.tipo === "renovacao" ? undefined : parsed.data.planoChave,
+      validadeDoPixMinutos: VALIDADE_DO_PIX_MINUTOS,
     });
     return NextResponse.json({ cobranca: serializarCobranca(criada) }, { status: 201 });
   } catch (erro) {
