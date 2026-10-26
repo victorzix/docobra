@@ -65,6 +65,7 @@ describe("carregarTelaDePlanos", () => {
       status: "trial",
       venceEm: emDias(9).toISOString(),
       diasRestantes: 9,
+      podeCancelar: false,
     });
   });
 
@@ -72,6 +73,7 @@ describe("carregarTelaDePlanos", () => {
     const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", venceEm: emDias(20) });
     const tela = await carregarTelaDePlanos(cenario.empresaId, AGORA);
 
+    expect(tela?.assinatura.podeCancelar).toBe(true);
     expect(tela?.planos.find((p) => p.chave === "essencial")).toMatchObject({ acao: "atual", valorUpgradeCentavos: null });
     // (24900 - 9900) * 20 / 30
     expect(tela?.planos.find((p) => p.chave === "escritorio")).toMatchObject({

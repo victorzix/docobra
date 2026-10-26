@@ -6,6 +6,7 @@ import {
   buscarPlanoDoCatalogo,
   listarPlanosPublicos, type PlanoDoCatalogo, type PlanoPublico,
 } from "@/db/queries/plano";
+import { podeCancelarAssinatura } from "@/lib/pagamentos/cancelar-assinatura";
 import { CICLO_MENSAL_DIAS } from "@/lib/pagamentos/ciclo-mensal";
 import { valorMinimoDoAmbiente } from "@/lib/pagamentos/iniciar-cobranca";
 import { MS_POR_DIA } from "@/lib/permissoes/janela";
@@ -31,6 +32,7 @@ export interface AssinaturaDaTela {
   status: StatusEfetivo;
   venceEm: string;
   diasRestantes: number;
+  podeCancelar: boolean;
 }
 
 export interface TelaDePlanos {
@@ -124,6 +126,7 @@ export async function carregarTelaDePlanos(empresaId: string, agora: Date = new 
       status,
       venceEm: vigente.venceEm.toISOString(),
       diasRestantes,
+      podeCancelar: podeCancelarAssinatura(vigente, agora),
     },
     planos,
   };
