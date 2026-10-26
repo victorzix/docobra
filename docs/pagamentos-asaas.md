@@ -44,14 +44,24 @@ O Asaas precisa alcançar uma URL pública. Em desenvolvimento use um túnel (po
 
 ## 4. Renovações
 
-A rota `POST /api/cron/renovacoes` gera as cobranças de renovação (5 dias antes do
-vencimento). Defina `CRON_SECRET` e agende no Coolify (Scheduled Task, 1x por dia):
+A rota `POST /api/cron/renovacoes` gera as cobranças de renovação (10 dias antes do
+vencimento) e só considera assinaturas de plano mensal. Defina `CRON_SECRET` e agende no Coolify (Scheduled Task, 1x por dia):
 
 ```bash
 curl -fsS -X POST https://<dominio>/api/cron/renovacoes -H "Authorization: Bearer $CRON_SECRET"
 ```
 
 A rota é idempotente: rodar mais de uma vez no dia não duplica cobrança.
+
+**Escopo**: o Pix cobre só o plano mensal. Plano anual e cartão ficam para a fase do
+cartão (o card aparece como "Em breve no cartão"); não há boleto.
+
+**Cancelamento**: o botão fica na tela de Assinatura. Cancelada, a assinatura mantém o
+acesso até o vencimento. Reativar antes do vencimento é uma renovação: a nova cobrança
+emenda no vencimento atual.
+
+**Operação local**: no `.env` de desenvolvimento, escape o `$` inicial da chave do Asaas
+(`ASAAS_API_KEY="\$aact_..."`), porque o Next expande `$`. Em produção (Coolify) não precisa.
 
 ## 5. O que o Asaas faz sozinho
 
