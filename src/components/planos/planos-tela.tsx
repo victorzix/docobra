@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Carrossel } from "@/components/common/carrossel";
+import { CancelarAssinatura } from "@/components/planos/cancelar-assinatura";
 import { DocumentoDialog } from "@/components/planos/documento-dialog";
 import { PixDialog, type ResumoDoPedido } from "@/components/planos/pix-dialog";
 import { PlanoCard } from "@/components/planos/plano-card";
@@ -167,6 +168,8 @@ export function PlanosTela({ dados, contatoSuporte, permissoes }: PlanosTelaProp
           />
         ))}
       </Carrossel>
+
+      {dados.assinatura.podeCancelar && <CancelarAssinatura venceEm={dados.assinatura.venceEm} />}
 
       <PixDialog
         aberto={pagamentoAberto}
