@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { FileText, ClipboardList, FolderKanban } from "lucide-react";
+import { FileText, ClipboardList, CreditCard, FolderKanban } from "lucide-react";
 
 import { Logo } from "@/components/common/logo";
 import {
@@ -20,6 +20,7 @@ const ITENS_NAV = [
   { href: "/dashboard/projetos", label: "Projetos", icon: FolderKanban },
   { href: "/dashboard/memorial", label: "Memorial Descritivo", icon: FileText },
   { href: "/dashboard/comunique-se", label: "Comunique-se", icon: ClipboardList },
+  { href: "/dashboard/planos", label: "Planos", icon: CreditCard },
 ];
 
 export function ehItemAtivo(pathname: string, href: string): boolean {
