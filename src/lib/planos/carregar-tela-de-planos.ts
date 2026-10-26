@@ -6,6 +6,7 @@ import {
   buscarPlanoDoCatalogo,
   listarPlanosPublicos, type PlanoDoCatalogo, type PlanoPublico,
 } from "@/db/queries/plano";
+import { CICLO_MENSAL_DIAS } from "@/lib/pagamentos/ciclo-mensal";
 import { valorMinimoDoAmbiente } from "@/lib/pagamentos/iniciar-cobranca";
 import { MS_POR_DIA } from "@/lib/permissoes/janela";
 import { derivarStatus, type StatusEfetivo } from "@/lib/permissoes/status-assinatura";
@@ -49,6 +50,8 @@ interface Contexto {
 // Espelha as regras de `iniciarCobranca`: o que a tela oferece é o que a rota aceita.
 function decidirAcao(destino: PlanoPublico, c: Contexto): Pick<PlanoDaTela, "acao" | "valorUpgradeCentavos"> {
   const sem = (acao: AcaoDoPlano) => ({ acao, valorUpgradeCentavos: null });
+
+  if (destino.cicloDias !== CICLO_MENSAL_DIAS && destino.chave !== c.atual.chave) return sem("em_breve");
 
   if (c.vigente.status === "cancelada" && c.status === "cancelada" && destino.chave === c.atual.chave) {
     return sem("reativar");

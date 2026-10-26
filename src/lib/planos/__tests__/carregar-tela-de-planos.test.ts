@@ -2,7 +2,9 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 
 import { db } from "@/db";
 import { semearCatalogoNoBancoDeTeste } from "@/db/__tests__/helpers/semear-catalogo";
-import { empresa } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
+import { cobranca, empresa, plano } from "@/db/schema";
 import { MS_POR_DIA } from "@/lib/permissoes/janela";
 import { AGORA, criarCenario, limparCenarios } from "@/lib/pagamentos/__tests__/helpers/cenario";
 import { carregarTelaDePlanos } from "../carregar-tela-de-planos";
@@ -123,6 +125,30 @@ describe("carregarTelaDePlanos", () => {
   it("cancelada ainda dentro do ciclo: o plano atual vira 'reativar' e os outros 'assinar'", async () => {
     const cenario = await criarCenario({ planoChave: "essencial", status: "cancelada", venceEm: emDias(10) });
     expect(await acoes(cenario.empresaId)).toEqual({ essencial: "reativar", escritorio: "assinar" });
+  });
+
+  it("plano que não é mensal aparece como 'em_breve' (Pix só mensal)", async () => {
+    const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", venceEm: emDias(20) });
+    try {
+      await db.insert(plano).values({
+        chave: "anual-teste",
+        nome: "Anual teste",
+        nivel: 5,
+        cicloDias: 360,
+        precoCentavos: 90000,
+        ativo: true,
+        interno: false,
+      });
+
+      const acoesPorPlano = await acoes(cenario.empresaId);
+
+      expect(acoesPorPlano["anual-teste"]).toBe("em_breve");
+      expect(acoesPorPlano.escritorio).toBe("upgrade");
+    } finally {
+      const [anual] = await db.select({ id: plano.id }).from(plano).where(eq(plano.chave, "anual-teste"));
+      if (anual) await db.delete(cobranca).where(eq(cobranca.planoDestinoId, anual.id));
+      await db.delete(plano).where(eq(plano.chave, "anual-teste"));
+    }
   });
 
   it("no plano mais alto, o de nível menor vira downgrade (pelo suporte)", async () => {

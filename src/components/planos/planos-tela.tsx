@@ -44,6 +44,17 @@ function pedidoDoPlano(plano: PlanoDaTela): Pedido {
       },
     };
   }
+  if (plano.acao === "reativar") {
+    return {
+      input: { tipo: "renovacao" },
+      resumo: {
+        ...base,
+        tipoRotulo: "Reativação",
+        valorCentavos: plano.precoCentavos,
+        nota: "A assinatura volta a ficar ativa e o ciclo continua de onde parou.",
+      },
+    };
+  }
   if (plano.acao === "upgrade") {
     return {
       input: { tipo: "upgrade", planoChave: plano.chave },

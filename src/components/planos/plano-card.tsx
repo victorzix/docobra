@@ -64,11 +64,18 @@ export function PlanoCard({ plano, ocupado, linkSuporte, onEscolher, situacao }:
           </Button>
         )}
 
-        {(plano.acao === "assinar" || plano.acao === "renovar" || plano.acao === "upgrade") && (
+        {(plano.acao === "assinar" || plano.acao === "renovar" || plano.acao === "reativar" || plano.acao === "upgrade") && (
           <Button className="w-full" disabled={ocupado} onClick={() => onEscolher(plano)}>
             {plano.acao === "assinar" && "Assinar"}
             {plano.acao === "renovar" && "Renovar"}
+            {plano.acao === "reativar" && "Reativar assinatura"}
             {plano.acao === "upgrade" && "Fazer upgrade"}
+          </Button>
+        )}
+
+        {plano.acao === "em_breve" && (
+          <Button variant="outline" className="w-full" disabled>
+            Em breve no cartão
           </Button>
         )}
         {plano.acao === "upgrade" && (
