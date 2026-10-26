@@ -44,7 +44,6 @@ export default async function MemorialListaPage() {
               chave="memorial.gerar"
               unidade="documentos"
               permissoesIniciais={contexto.permissoes}
-              contatoSuporte={contexto.contatoSuporte}
             />
           )}
           <NovoMemorialDrawer projetos={projetos} permissoesIniciais={contexto?.permissoes} />

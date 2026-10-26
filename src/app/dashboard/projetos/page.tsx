@@ -35,7 +35,6 @@ export default async function ProjetosPage() {
               chave="projetos.criar"
               unidade="projetos"
               permissoesIniciais={contexto.permissoes}
-              contatoSuporte={contexto.contatoSuporte}
             />
           )}
           <NovoProjetoDialog permissoesIniciais={contexto?.permissoes} />

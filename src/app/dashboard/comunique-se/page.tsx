@@ -44,7 +44,6 @@ export default async function ComuniqueSePage() {
               chave="comunique-se.processar"
               unidade="processamentos por IA"
               permissoesIniciais={contexto.permissoes}
-              contatoSuporte={contexto.contatoSuporte}
             />
           )}
           <NovoComuniqueSeDrawer projetos={projetos} />
