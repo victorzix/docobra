@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { nomeEmpresa, nome, email, senha } = parsed.data;
+    const { nomeEmpresa, documento, nome, email, senha } = parsed.data;
 
     const existente = await db.query.usuario.findFirst({ where: eq(usuario.email, email) });
     if (existente) {
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     let novoUsuario;
     try {
       novoUsuario = await db.transaction(async (tx) => {
-        const [novaEmpresa] = await tx.insert(empresa).values({ nome: nomeEmpresa }).returning();
+        const [novaEmpresa] = await tx.insert(empresa).values({ nome: nomeEmpresa, documento }).returning();
         await criarAssinaturaTrial(tx, novaEmpresa.id);
         const [criado] = await tx
           .insert(usuario)

@@ -20,6 +20,7 @@ function criarRequest(body: unknown) {
 
 const payloadValido = {
   nomeEmpresa: "Ancar Engenharia",
+  documento: "11222333000181",
   nome: "Victor",
   email: "victor@ancar.com.br",
   senha: "senha-forte-123",
@@ -52,6 +53,21 @@ describe("POST /api/auth/register", () => {
 
     expect(vigente?.planoChave).toBe("trial");
     expect(vigente?.status).toBe("trial");
+  });
+
+  it("grava o documento da empresa só com dígitos", async () => {
+    const response = await POST(criarRequest({ ...payloadValido, documento: "11.222.333/0001-81" }));
+    expect(response.status).toBe(201);
+    const [empresaCriada] = await db.select().from(empresa);
+    expect(empresaCriada.documento).toBe("11222333000181");
+  });
+
+  it("rejeita documento ausente ou inválido com 400 e não cria nada", async () => {
+    const semDocumento: Partial<typeof payloadValido> = { ...payloadValido };
+    delete semDocumento.documento;
+    expect((await POST(criarRequest(semDocumento))).status).toBe(400);
+    expect((await POST(criarRequest({ ...payloadValido, documento: "11111111111" }))).status).toBe(400);
+    expect(await db.select().from(empresa)).toHaveLength(0);
   });
 
   it("rejeita email duplicado com 409 e não cria segunda linha", async () => {

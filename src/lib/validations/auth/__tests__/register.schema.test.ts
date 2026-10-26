@@ -4,6 +4,7 @@ import { registerSchema } from "@/lib/validations/auth/register.schema";
 describe("registerSchema", () => {
   const valido = {
     nomeEmpresa: "Ancar Engenharia",
+    documento: "11222333000181",
     nome: "Victor",
     email: "victor@ancar.com.br",
     senha: "senha-forte-123",
@@ -23,6 +24,13 @@ describe("registerSchema", () => {
 
   it("rejeita nomeEmpresa vazio", () => {
     expect(registerSchema.safeParse({ ...valido, nomeEmpresa: "" }).success).toBe(false);
+  });
+
+  it("exige o documento e remove a máscara", () => {
+    expect(registerSchema.safeParse({ ...valido, documento: "" }).success).toBe(false);
+    expect(registerSchema.safeParse({ ...valido, documento: "11111111111" }).success).toBe(false);
+    const ok = registerSchema.parse({ ...valido, documento: "11.222.333/0001-81" });
+    expect(ok.documento).toBe("11222333000181");
   });
 
   it("rejeita nome vazio", () => {

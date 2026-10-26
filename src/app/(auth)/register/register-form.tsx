@@ -6,8 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Building2, CircleAlert, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { Building2, CircleAlert, Eye, EyeOff, Hash, Lock, Mail, User } from "lucide-react";
 
+import { mascararDocumento } from "@/lib/pagamentos/documento";
 import { registerSchema, type RegisterInput } from "@/lib/validations/auth/register.schema";
 import { useRegister } from "@/hooks/use-register";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ export function RegisterForm() {
 
   const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { nomeEmpresa: "", nome: "", email: "", senha: "" },
+    defaultValues: { nomeEmpresa: "", documento: "", nome: "", email: "", senha: "" },
   });
 
   function onSubmit(values: RegisterInput) {
@@ -82,6 +83,32 @@ export function RegisterForm() {
                     />
                   </div>
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="documento"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-mono text-[11px] font-medium tracking-wider text-slate-500 uppercase">
+                  CPF ou CNPJ da empresa
+                </FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Hash className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      inputMode="numeric"
+                      autoComplete="off"
+                      placeholder="00.000.000/0000-00"
+                      className="pl-9 focus-visible:border-cyan-600 focus-visible:ring-cyan-500/30"
+                      {...field}
+                      onChange={(evento) => field.onChange(mascararDocumento(evento.target.value))}
+                    />
+                  </div>
+                </FormControl>
+                <p className="text-xs text-muted-foreground">Usado para emitir a cobrança do plano.</p>
                 <FormMessage />
               </FormItem>
             )}
