@@ -152,7 +152,7 @@ describe("POST /api/cobrancas", () => {
 
     expect(resposta.status).toBe(502);
     expect(await resposta.json()).toEqual({
-      error: "O provedor de pagamento recusou a cobrança. Confira o CPF/CNPJ da empresa ou fale com o suporte.",
+      error: "O provedor de pagamento recusou a cobrança. Tente de novo mais tarde ou fale com o suporte.",
       codigo: "GATEWAY_RECUSOU",
     });
     erroNoConsole.mockRestore();

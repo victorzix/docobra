@@ -25,9 +25,11 @@ export async function aplicarPagamento(
     .where(eq(plano.id, paga.planoDestinoId));
   const [atual] = await tx.select().from(assinatura).where(eq(assinatura.id, paga.assinaturaId));
 
-  // Pago depois da carência, emendar no vencimento antigo cobraria o preço cheio por
-  // pouco ou nenhum acesso: o pagamento recomeça o ciclo, como numa assinatura nova.
-  const comoAssinatura = paga.tipo === "assinatura" || derivarStatus(atual, agora) === "suspensa";
+  // Renovação paga depois da carência: emendar no vencimento antigo cobraria o preço cheio
+  // por pouco ou nenhum acesso, então o pagamento recomeça o ciclo. O upgrade fica de fora:
+  // seu valor é rateado, e um ciclo cheio do plano maior por ele seria prejuízo.
+  const comoAssinatura =
+    paga.tipo === "assinatura" || (paga.tipo === "renovacao" && derivarStatus(atual, agora) === "suspensa");
 
   if (paga.tipo === "renovacao" && !comoAssinatura) {
     await tx

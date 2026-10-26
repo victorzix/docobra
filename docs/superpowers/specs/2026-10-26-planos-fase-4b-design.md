@@ -41,7 +41,7 @@ Escopo: telas, coleta do CPF/CNPJ, pequenos ajustes de backend adiados da revis�
 ## 4. Ajustes de backend (itens adiados da revisão final da 4a)
 
 - Recusa definitiva do gateway devolve `502` com código `GATEWAY_RECUSOU` e mensagem própria; falha incerta continua `502` genérico.
-- `efeitos.ts` (`aplicarPagamento`): se a assinatura está `suspensa` quando a cobrança de renovação ou upgrade é paga, aplica o efeito de `assinatura` (reinicia o ciclo), em vez de cobrar o preço cheio por pouco ou nenhum acesso.
+- `efeitos.ts` (`aplicarPagamento`): se a assinatura está `suspensa` quando uma cobrança de **renovação** é paga, aplica o efeito de `assinatura` (reinicia o ciclo), em vez de cobrar o preço cheio por pouco ou nenhum acesso. O upgrade pago depois da suspensão só troca o trecho: seu valor é rateado, e um ciclo cheio do plano maior por ele seria prejuízo.
 
 ## 5. Erros na tela
 

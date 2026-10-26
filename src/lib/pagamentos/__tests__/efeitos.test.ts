@@ -102,15 +102,18 @@ describe("aplicarPagamento", () => {
     expect(trechos.filter((t) => t.fim === null)).toHaveLength(1);
   });
 
-  it("upgrade pago depois da suspensão: troca o plano e reinicia o ciclo", async () => {
-    const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", inicio: emDias(-40), venceEm: emDias(-10) });
+  it("upgrade pago depois da suspensão: troca o plano mas não ganha um ciclo novo (valor rateado)", async () => {
+    const inicio = emDias(-40);
+    const venceEm = emDias(-10);
+    const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", inicio, venceEm });
     const paga = await inserirCobranca(cenario, { tipo: "upgrade", planoChave: "escritorio" });
 
     await aplicarPagamento(db, paga, AGORA);
 
     const depois = await assinaturaDe(cenario.assinaturaId);
-    expect(depois.inicio).toEqual(AGORA);
-    expect(depois.venceEm).toEqual(emDias(30));
+    expect(depois.inicio).toEqual(inicio);
+    expect(depois.venceEm).toEqual(venceEm);
+    expect(depois.status).toBe("ativa");
     const trechos = await trechosDe(cenario.assinaturaId);
     expect(trechos.find((t) => t.plano === "escritorio")).toMatchObject({ fim: null, origem: "autoatendimento" });
   });

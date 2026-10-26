@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "O provedor de pagamento recusou a cobrança. Confira o CPF/CNPJ da empresa ou fale com o suporte.",
+            "O provedor de pagamento recusou a cobrança. Tente de novo mais tarde ou fale com o suporte.",
           codigo: "GATEWAY_RECUSOU",
         },
         { status: 502 },
