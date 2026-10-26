@@ -1,10 +1,12 @@
 import { z } from "zod";
 
-export const atualizarDocumentoSchema = z.object({
-  documento: z
-    .string()
-    .transform((valor) => valor.replace(/\D/g, ""))
-    .pipe(z.string().regex(/^(\d{11}|\d{14})$/, "Informe um CPF (11 dígitos) ou um CNPJ (14 dígitos).")),
-});
+import { validarDocumento } from "@/lib/pagamentos/documento";
+
+export const documentoSchema = z
+  .string()
+  .transform((valor) => valor.replace(/\D/g, ""))
+  .pipe(z.string().refine(validarDocumento, "Informe um CPF ou CNPJ válido."));
+
+export const atualizarDocumentoSchema = z.object({ documento: documentoSchema });
 
 export type AtualizarDocumentoInput = z.infer<typeof atualizarDocumentoSchema>;

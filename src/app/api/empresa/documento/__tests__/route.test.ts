@@ -31,18 +31,18 @@ describe("PUT /api/empresa/documento", () => {
   afterEach(limparCenarios);
 
   it("sem sessão: 401", async () => {
-    expect((await PUT(requisicao({ documento: "12345678000199" }))).status).toBe(401);
+    expect((await PUT(requisicao({ documento: "11222333000181" }))).status).toBe(401);
   });
 
   it("grava só os dígitos de um CNPJ com máscara", async () => {
     const { cenario, token } = await sessao();
 
-    const resposta = await PUT(requisicao({ documento: "12.345.678/0001-99" }, token));
+    const resposta = await PUT(requisicao({ documento: "11.222.333/0001-81" }, token));
 
     expect(resposta.status).toBe(200);
-    expect(await resposta.json()).toEqual({ documento: "12345678000199" });
+    expect(await resposta.json()).toEqual({ documento: "11222333000181" });
     const [salva] = await db.select().from(empresa).where(eq(empresa.id, cenario.empresaId));
-    expect(salva.documento).toBe("12345678000199");
+    expect(salva.documento).toBe("11222333000181");
   });
 
   it("aceita CPF (11 dígitos) com máscara", async () => {
@@ -53,7 +53,7 @@ describe("PUT /api/empresa/documento", () => {
     expect(await resposta.json()).toEqual({ documento: "12345678909" });
   });
 
-  it.each(["", "123", "123456789012", "abcdefghijk", "1234567890123"])("rejeita %j com 400", async (documento) => {
+  it.each(["", "123", "123456789012", "abcdefghijk", "1234567890123", "52998224724", "11111111111"])("rejeita %j com 400", async (documento) => {
     const { token } = await sessao();
 
     const resposta = await PUT(requisicao({ documento }, token));
