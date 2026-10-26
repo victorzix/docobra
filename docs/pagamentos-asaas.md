@@ -62,3 +62,26 @@ link do Pix, o que serve de lembrete de renovação (o DocObra ainda não tem e-
 
 Troque a chave e `ASAAS_BASE_URL`, recrie o webhook na conta de produção com um novo
 `authToken`, e valide de novo o valor mínimo.
+
+## 6. Lançamento (checklist)
+
+Faça nesta ordem; a tela `/dashboard/planos` já existe, mas só cobra de verdade com as chaves de produção.
+
+1. **Conta e webhook**: `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` e o webhook apontando para
+   `/api/webhooks/pagamentos/asaas` (sandbox para validar; troque por produção ao lançar,
+   com `ASAAS_BASE_URL` de produção). Rode `node scripts/asaas-sandbox-check.mjs --cpfcnpj=<válido>`
+   antes e ajuste `PAGAMENTO_VALOR_MINIMO_CENTAVOS` se o mínimo do Asaas for maior que R$ 5,00.
+2. **Banco**: aplique o schema em produção com `drizzle-kit push` **antes** de publicar o código
+   (3 tabelas novas, `empresa.documento` anulável e índices; é aditivo).
+3. **Renovações**: defina `CRON_SECRET` e crie a tarefa agendada diária no Coolify para
+   `POST /api/cron/renovacoes` (seção 4).
+4. **Empresas existentes**: `node scripts/seed-planos.mjs --preencher-existentes` se houver empresa
+   sem assinatura; defina `SUPORTE_EMAIL`. Empresas criadas antes do campo de CPF/CNPJ informam o
+   documento na primeira cobrança (o diálogo pede sozinho).
+5. **Fim do trial**: estenda os trials em andamento (`admin-plano estender`) e só então ligue
+   `ASSINATURA_SUSPENSAO_ATIVA=true`.
+6. **Preços e limites**: os valores do seed (R$ 99 e R$ 249; 20 e 90 documentos por mês) são
+   provisórios. Revise antes de cobrar de verdade.
+7. **Teste ponta a ponta no sandbox**: crie uma conta nova, assine o Essencial, pague o Pix de
+   teste, confira o plano ativo e o consumo; depois faça um upgrade e uma renovação (ajustando
+   `vence_em` no banco para 3 dias à frente).
