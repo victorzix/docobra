@@ -87,6 +87,34 @@ describe("aplicarPagamento", () => {
     expect(await trechosDe(cenario.assinaturaId)).toHaveLength(1);
   });
 
+  it("renovação paga depois da suspensão: reinicia o ciclo a partir do pagamento em vez de emendar no vencimento antigo", async () => {
+    const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", inicio: emDias(-40), venceEm: emDias(-10) });
+    const paga = await inserirCobranca(cenario, { tipo: "renovacao", planoChave: "essencial" });
+
+    await aplicarPagamento(db, paga, AGORA);
+
+    const depois = await assinaturaDe(cenario.assinaturaId);
+    expect(depois.status).toBe("ativa");
+    expect(depois.inicio).toEqual(AGORA);
+    expect(depois.venceEm).toEqual(emDias(30));
+    const trechos = await trechosDe(cenario.assinaturaId);
+    expect(trechos).toHaveLength(2);
+    expect(trechos.filter((t) => t.fim === null)).toHaveLength(1);
+  });
+
+  it("upgrade pago depois da suspensão: troca o plano e reinicia o ciclo", async () => {
+    const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", inicio: emDias(-40), venceEm: emDias(-10) });
+    const paga = await inserirCobranca(cenario, { tipo: "upgrade", planoChave: "escritorio" });
+
+    await aplicarPagamento(db, paga, AGORA);
+
+    const depois = await assinaturaDe(cenario.assinaturaId);
+    expect(depois.inicio).toEqual(AGORA);
+    expect(depois.venceEm).toEqual(emDias(30));
+    const trechos = await trechosDe(cenario.assinaturaId);
+    expect(trechos.find((t) => t.plano === "escritorio")).toMatchObject({ fim: null, origem: "autoatendimento" });
+  });
+
   it("cancela as outras cobranças pendentes ou vencidas e devolve as que estão no gateway", async () => {
     const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", venceEm: emDias(5) });
     const paga = await inserirCobranca(cenario, { tipo: "upgrade", planoChave: "escritorio", providerChargeId: "pay_paga" });

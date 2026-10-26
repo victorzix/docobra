@@ -5,6 +5,7 @@ import type { Cobranca } from "@/db/queries/cobranca";
 import type { ExecutorDb } from "@/db/queries/executor";
 import { assinatura, assinaturaTrecho, cobranca, plano } from "@/db/schema";
 import { MS_POR_DIA } from "@/lib/permissoes/janela";
+import { derivarStatus } from "@/lib/permissoes/status-assinatura";
 
 export interface CobrancaParaCancelarNoGateway {
   provider: string;
@@ -24,7 +25,11 @@ export async function aplicarPagamento(
     .where(eq(plano.id, paga.planoDestinoId));
   const [atual] = await tx.select().from(assinatura).where(eq(assinatura.id, paga.assinaturaId));
 
-  if (paga.tipo === "renovacao") {
+  // Pago depois da carência, emendar no vencimento antigo cobraria o preço cheio por
+  // pouco ou nenhum acesso: o pagamento recomeça o ciclo, como numa assinatura nova.
+  const comoAssinatura = paga.tipo === "assinatura" || derivarStatus(atual, agora) === "suspensa";
+
+  if (paga.tipo === "renovacao" && !comoAssinatura) {
     await tx
       .update(assinatura)
       .set({
@@ -42,7 +47,7 @@ export async function aplicarPagamento(
       .insert(assinaturaTrecho)
       .values({ assinaturaId: atual.id, planoId: destino.id, inicio: agora, origem: "autoatendimento" });
 
-    if (paga.tipo === "assinatura") {
+    if (comoAssinatura) {
       await tx
         .update(assinatura)
         .set({
