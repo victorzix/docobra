@@ -51,7 +51,18 @@ export async function POST(request: NextRequest) {
         { status: 409 },
       );
     }
-    if (erro instanceof FalhaIncertaError || erro instanceof RecusaDefinitivaError) {
+    if (erro instanceof RecusaDefinitivaError) {
+      console.error("[POST /api/cobrancas]", erro);
+      return NextResponse.json(
+        {
+          error:
+            "O provedor de pagamento recusou a cobrança. Confira o CPF/CNPJ da empresa ou fale com o suporte.",
+          codigo: "GATEWAY_RECUSOU",
+        },
+        { status: 502 },
+      );
+    }
+    if (erro instanceof FalhaIncertaError) {
       console.error("[POST /api/cobrancas]", erro);
       return NextResponse.json(
         { error: "Não foi possível gerar o Pix agora, tente de novo em instantes." },

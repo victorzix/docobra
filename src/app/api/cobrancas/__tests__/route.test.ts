@@ -129,18 +129,32 @@ describe("POST /api/cobrancas", () => {
     });
   });
 
-  it.each([
-    ["falha incerta", new FalhaIncertaError("timeout")],
-    ["recusa definitiva", new RecusaDefinitivaError("recusou")],
-  ])("%s do gateway: 502 com mensagem amigável", async (_nome, erro) => {
+  it("falha incerta do gateway: 502 com mensagem amigável e sem código", async () => {
     const { token } = await sessao();
-    vi.mocked(iniciarCobranca).mockRejectedValue(erro);
+    vi.mocked(iniciarCobranca).mockRejectedValue(new FalhaIncertaError("timeout"));
     const erroNoConsole = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     const resposta = await POST(requisicao({ tipo: "renovacao" }, token));
 
     expect(resposta.status).toBe(502);
-    expect((await resposta.json()).error).toContain("tente de novo");
+    const corpo = await resposta.json();
+    expect(corpo.error).toContain("tente de novo");
+    expect(corpo.codigo).toBeUndefined();
+    erroNoConsole.mockRestore();
+  });
+
+  it("recusa definitiva do gateway: 502 GATEWAY_RECUSOU", async () => {
+    const { token } = await sessao();
+    vi.mocked(iniciarCobranca).mockRejectedValue(new RecusaDefinitivaError("recusou"));
+    const erroNoConsole = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const resposta = await POST(requisicao({ tipo: "renovacao" }, token));
+
+    expect(resposta.status).toBe(502);
+    expect(await resposta.json()).toEqual({
+      error: "O provedor de pagamento recusou a cobrança. Confira o CPF/CNPJ da empresa ou fale com o suporte.",
+      codigo: "GATEWAY_RECUSOU",
+    });
     erroNoConsole.mockRestore();
   });
 
