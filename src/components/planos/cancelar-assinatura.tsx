@@ -27,7 +27,11 @@ export function CancelarAssinatura({ venceEm }: { venceEm: string }) {
 
   return (
     <>
-      <Button variant="ghost" className="justify-self-start text-muted-foreground" onClick={() => setAberto(true)}>
+      <Button variant="ghost" className="justify-self-start text-muted-foreground" onClick={() => {
+          cancelar.reset();
+          setAberto(true);
+        }}
+      >
         Cancelar assinatura
       </Button>
 

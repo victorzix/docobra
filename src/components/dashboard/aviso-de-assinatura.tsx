@@ -4,7 +4,7 @@ import type { AvisoDeAssinatura as Aviso } from "@/lib/planos/descrever-aviso-de
 
 const COR_DO_TOM = {
   normal: "border-primary/30 bg-primary/10 text-foreground",
-  alerta: "border-amber-500/40 bg-amber-500/10 text-amber-900",
+  alerta: "border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200",
 } as const;
 
 export function AvisoDeAssinatura({ aviso }: { aviso: Aviso }) {

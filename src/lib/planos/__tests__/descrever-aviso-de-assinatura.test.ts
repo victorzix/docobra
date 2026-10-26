@@ -19,6 +19,14 @@ describe("descreverAvisoDeAssinatura", () => {
     );
   });
 
+  it("ativa com exatamente 10 dias: ainda avisa (borda da janela)", () => {
+    expect(descreverAvisoDeAssinatura({ ...base, diasRestantes: 10, status: "ativa" })).toEqual({
+      tom: "normal",
+      texto: "Sua assinatura vence em 10 dias (20/06/2026).",
+      acao: "Renovar",
+    });
+  });
+
   it("ativa fora da janela: sem aviso", () => {
     expect(descreverAvisoDeAssinatura({ ...base, diasRestantes: 11, status: "ativa" })).toBeNull();
   });
