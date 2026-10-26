@@ -11,7 +11,7 @@ import { MS_POR_DIA } from "@/lib/permissoes/janela";
 import { derivarStatus, type StatusEfetivo } from "@/lib/permissoes/status-assinatura";
 import { descreverLimitesDoPlano } from "./descrever-limites";
 
-export type AcaoDoPlano = "assinar" | "renovar" | "upgrade" | "downgrade" | "suporte" | "atual";
+export type AcaoDoPlano = "assinar" | "renovar" | "upgrade" | "downgrade" | "suporte" | "atual" | "reativar" | "em_breve";
 
 export interface PlanoDaTela {
   chave: string;
@@ -49,6 +49,10 @@ interface Contexto {
 // Espelha as regras de `iniciarCobranca`: o que a tela oferece é o que a rota aceita.
 function decidirAcao(destino: PlanoPublico, c: Contexto): Pick<PlanoDaTela, "acao" | "valorUpgradeCentavos"> {
   const sem = (acao: AcaoDoPlano) => ({ acao, valorUpgradeCentavos: null });
+
+  if (c.vigente.status === "cancelada" && c.status === "cancelada" && destino.chave === c.atual.chave) {
+    return sem("reativar");
+  }
 
   const assinaturaPaga = c.vigente.status === "ativa" && (c.status === "ativa" || c.status === "carencia");
   if (!assinaturaPaga) return sem("assinar");

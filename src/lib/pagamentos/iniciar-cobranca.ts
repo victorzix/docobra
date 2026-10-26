@@ -113,8 +113,11 @@ function exigirCicloMensal(plano: PlanoDoCatalogo): PlanoDoCatalogo {
 
 function planejar(tipo: TipoCobranca, c: Contexto): Planejamento {
   if (tipo === "renovacao") {
-    const renovavel =
+    const ativaNoCiclo =
       c.vigente.status === "ativa" && (c.statusEfetivo === "ativa" || c.statusEfetivo === "carencia");
+    // Cancelada ainda com acesso: pagar reativa e emenda no vencimento, sem perder os dias já pagos.
+    const reativavel = c.vigente.status === "cancelada" && c.statusEfetivo === "cancelada";
+    const renovavel = ativaNoCiclo || reativavel;
     if (!renovavel) {
       throw new CobrancaNaoPermitidaError("renovacao_indisponivel", "Esta assinatura não está em período de renovação.");
     }

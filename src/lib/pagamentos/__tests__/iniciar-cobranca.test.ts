@@ -333,6 +333,33 @@ describe("iniciarCobranca", () => {
   });
 
   describe("renovação", () => {
+    it("cancelada com o ciclo vigente: renovação é permitida e emenda no vencimento atual", async () => {
+      const cenario = await criarCenario({ planoChave: "essencial", status: "cancelada", venceEm: emDias(10) });
+
+      const criada = await iniciarCobranca({
+        empresaId: cenario.empresaId,
+        tipo: "renovacao",
+        agora: AGORA,
+        roteador: new PaymentRouter([criarProvedorFalso("asaas")]),
+      });
+
+      expect(criada).toMatchObject({ tipo: "renovacao", valorCentavos: 9900 });
+      expect(criada.venceEm).toEqual(emDias(10));
+    });
+
+    it("cancelada depois do vencimento: renovação continua recusada", async () => {
+      const cenario = await criarCenario({ planoChave: "essencial", status: "cancelada", venceEm: emDias(-1) });
+
+      const erro = await iniciarCobranca({
+        empresaId: cenario.empresaId,
+        tipo: "renovacao",
+        agora: AGORA,
+        roteador: new PaymentRouter([criarProvedorFalso("asaas")]),
+      }).catch((e) => e);
+
+      expect(erro).toBeInstanceOf(CobrancaNaoPermitidaError);
+    });
+
     it("cobra o preço cheio do plano atual, vencendo no fim do ciclo", async () => {
       const venceEm = emDias(3);
       const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", inicio: emDias(-27), venceEm });

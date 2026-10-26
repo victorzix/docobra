@@ -87,6 +87,19 @@ describe("aplicarPagamento", () => {
     expect(await trechosDe(cenario.assinaturaId)).toHaveLength(1);
   });
 
+  it("renovação de assinatura cancelada com ciclo vigente: volta para ativa e soma um ciclo ao vencimento", async () => {
+    const venceEm = emDias(10);
+    const cenario = await criarCenario({ planoChave: "essencial", status: "cancelada", inicio: emDias(-20), venceEm });
+    const paga = await inserirCobranca(cenario, { tipo: "renovacao", planoChave: "essencial" });
+
+    await aplicarPagamento(db, paga, AGORA);
+
+    const depois = await assinaturaDe(cenario.assinaturaId);
+    expect(depois.status).toBe("ativa");
+    expect(depois.venceEm).toEqual(new Date(venceEm.getTime() + 30 * MS_POR_DIA));
+    expect(depois.inicio).toEqual(emDias(-20));
+  });
+
   it("renovação paga depois da suspensão: reinicia o ciclo a partir do pagamento em vez de emendar no vencimento antigo", async () => {
     const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", inicio: emDias(-40), venceEm: emDias(-10) });
     const paga = await inserirCobranca(cenario, { tipo: "renovacao", planoChave: "essencial" });

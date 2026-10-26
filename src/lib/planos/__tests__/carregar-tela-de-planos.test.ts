@@ -66,7 +66,7 @@ describe("carregarTelaDePlanos", () => {
     });
   });
 
-  it("ativa com mais de 5 dias: plano atual é 'atual' e o de nível maior é upgrade com o valor simulado", async () => {
+  it("ativa com mais de 10 dias: plano atual é 'atual' e o de nível maior é upgrade com o valor simulado", async () => {
     const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", venceEm: emDias(20) });
     const tela = await carregarTelaDePlanos(cenario.empresaId, AGORA);
 
@@ -78,7 +78,17 @@ describe("carregarTelaDePlanos", () => {
     });
   });
 
-  it("ativa a 5 dias ou menos do vencimento: plano atual vira 'renovar'", async () => {
+  it("ativa a 7 dias do vencimento (dentro da janela de 10): plano atual vira 'renovar'", async () => {
+    const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", venceEm: emDias(7) });
+    expect((await acoes(cenario.empresaId)).essencial).toBe("renovar");
+  });
+
+  it("ativa a 12 dias do vencimento (fora da janela de 10): plano atual continua 'atual'", async () => {
+    const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", venceEm: emDias(12) });
+    expect((await acoes(cenario.empresaId)).essencial).toBe("atual");
+  });
+
+  it("ativa a 10 dias ou menos do vencimento: plano atual vira 'renovar'", async () => {
     const cenario = await criarCenario({ planoChave: "essencial", status: "ativa", venceEm: emDias(3) });
     const tela = await carregarTelaDePlanos(cenario.empresaId, AGORA);
 
@@ -110,9 +120,9 @@ describe("carregarTelaDePlanos", () => {
     expect((await carregarTelaDePlanos(cenario.empresaId, AGORA))?.assinatura.status).toBe("suspensa");
   });
 
-  it("cancelada ainda dentro do ciclo: todos os planos são 'assinar'", async () => {
+  it("cancelada ainda dentro do ciclo: o plano atual vira 'reativar' e os outros 'assinar'", async () => {
     const cenario = await criarCenario({ planoChave: "essencial", status: "cancelada", venceEm: emDias(10) });
-    expect(await acoes(cenario.empresaId)).toEqual({ essencial: "assinar", escritorio: "assinar" });
+    expect(await acoes(cenario.empresaId)).toEqual({ essencial: "reativar", escritorio: "assinar" });
   });
 
   it("no plano mais alto, o de nível menor vira downgrade (pelo suporte)", async () => {
