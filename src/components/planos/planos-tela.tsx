@@ -162,14 +162,17 @@ export function PlanosTela({ dados, contatoSuporte, permissoes }: PlanosTelaProp
             key={plano.chave}
             plano={plano}
             situacao={plano.ehAtual ? resumo : undefined}
+            cancelamento={
+              plano.ehAtual && dados.assinatura.podeCancelar ? (
+                <CancelarAssinatura venceEm={dados.assinatura.venceEm} />
+              ) : undefined
+            }
             ocupado={criar.isPending}
             linkSuporte={linkSuporteDoPlano(plano)}
             onEscolher={(escolhido) => iniciar(pedidoDoPlano(escolhido))}
           />
         ))}
       </Carrossel>
-
-      {dados.assinatura.podeCancelar && <CancelarAssinatura venceEm={dados.assinatura.venceEm} />}
 
       <PixDialog
         aberto={pagamentoAberto}

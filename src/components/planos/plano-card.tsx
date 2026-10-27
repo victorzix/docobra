@@ -13,6 +13,8 @@ interface PlanoCardProps {
   linkSuporte: string | null;
   onEscolher: (plano: PlanoDaTela) => void;
   situacao?: { selo: string; detalhe: string; tom: "normal" | "alerta" | "erro" };
+  // Só o card do plano atual recebe: substitui o botão "Plano atual" ou fica abaixo de "Renovar".
+  cancelamento?: React.ReactNode;
 }
 
 const COR_DO_SELO = {
@@ -21,7 +23,7 @@ const COR_DO_SELO = {
   erro: "bg-destructive/10 text-destructive",
 } as const;
 
-export function PlanoCard({ plano, ocupado, linkSuporte, onEscolher, situacao }: PlanoCardProps) {
+export function PlanoCard({ plano, ocupado, linkSuporte, onEscolher, situacao, cancelamento }: PlanoCardProps) {
   const ehAtual = plano.ehAtual;
 
   return (
@@ -58,11 +60,12 @@ export function PlanoCard({ plano, ocupado, linkSuporte, onEscolher, situacao }:
       </CardContent>
 
       <CardFooter className="mt-auto flex-col items-stretch gap-2">
-        {plano.acao === "atual" && (
-          <Button variant="outline" className="w-full" disabled>
-            Plano atual
-          </Button>
-        )}
+        {plano.acao === "atual" &&
+          (cancelamento ?? (
+            <Button variant="outline" className="w-full" disabled>
+              Plano atual
+            </Button>
+          ))}
 
         {(plano.acao === "assinar" || plano.acao === "renovar" || plano.acao === "reativar" || plano.acao === "upgrade") && (
           <Button className="w-full" disabled={ocupado} onClick={() => onEscolher(plano)}>
@@ -83,6 +86,7 @@ export function PlanoCard({ plano, ocupado, linkSuporte, onEscolher, situacao }:
             {formatarReais(plano.valorUpgradeCentavos ?? 0)} agora, proporcional ao que falta do ciclo
           </p>
         )}
+        {plano.acao !== "atual" && cancelamento}
 
         {(plano.acao === "downgrade" || plano.acao === "suporte") &&
           (linkSuporte ? (

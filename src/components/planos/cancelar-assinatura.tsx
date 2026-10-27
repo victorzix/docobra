@@ -27,7 +27,7 @@ export function CancelarAssinatura({ venceEm }: { venceEm: string }) {
 
   return (
     <>
-      <Button variant="ghost" className="justify-self-start text-muted-foreground" onClick={() => {
+      <Button variant="outline" className="w-full text-destructive hover:text-destructive" onClick={() => {
           cancelar.reset();
           setAberto(true);
         }}
