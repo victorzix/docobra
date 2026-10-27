@@ -133,11 +133,12 @@ describe("queries de cobrança", () => {
   });
 
   describe("cancelarCobrancasPendentesObsoletas e criarCobrancaPendenteSeLivre", () => {
-    it("cancela só as pendentes não reutilizáveis da mesma chave e devolve as canceladas", async () => {
+    it("cancela as pendentes da assinatura que não são a reutilizável da mesma chave", async () => {
       const cenario = await criarCenario();
       const planoDestinoId = await idDoPlano("essencial");
       const velha = await inserirCobranca(cenario, { valorCentavos: 5000 });
       const outroTipo = await inserirCobranca(cenario, { tipo: "upgrade", valorCentavos: 5000 });
+      const outroPlano = await inserirCobranca(cenario, { planoChave: "escritorio" });
 
       const canceladas = await cancelarCobrancasPendentesObsoletas({
         assinaturaId: cenario.assinaturaId,
@@ -147,9 +148,25 @@ describe("queries de cobrança", () => {
         agora: AGORA,
       });
 
-      expect(canceladas.map((c) => c.id)).toEqual([velha.id]);
-      expect((await buscarCobrancaPorId(velha.id))?.status).toBe("cancelada");
-      expect((await buscarCobrancaPorId(outroTipo.id))?.status).toBe("pendente");
+      expect(canceladas.map((c) => c.id).sort()).toEqual([velha.id, outroTipo.id, outroPlano.id].sort());
+      expect((await buscarCobrancaPorId(outroPlano.id))?.status).toBe("cancelada");
+    });
+
+    it("mantém a pendente reutilizável da mesma chave e cancela a de outro plano", async () => {
+      const cenario = await criarCenario();
+      const reutilizavel = await inserirCobranca(cenario);
+      const outroPlano = await inserirCobranca(cenario, { planoChave: "escritorio" });
+
+      const canceladas = await cancelarCobrancasPendentesObsoletas({
+        assinaturaId: cenario.assinaturaId,
+        tipo: "assinatura",
+        planoDestinoId: await idDoPlano("essencial"),
+        valorCentavos: 9900,
+        agora: AGORA,
+      });
+
+      expect(canceladas.map((c) => c.id)).toEqual([outroPlano.id]);
+      expect((await buscarCobrancaPorId(reutilizavel.id))?.status).toBe("pendente");
     });
 
     it("não cria segunda pendente para a mesma chave", async () => {

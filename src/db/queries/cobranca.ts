@@ -36,10 +36,15 @@ export async function cancelarCobrancasPendentesObsoletas(filtro: {
     .where(
       and(
         eq(cobranca.assinaturaId, filtro.assinaturaId),
-        eq(cobranca.tipo, filtro.tipo),
-        eq(cobranca.planoDestinoId, filtro.planoDestinoId),
         eq(cobranca.status, "pendente"),
-        not(condicaoReutilizavel(filtro)!),
+        // Só um Pix vivo por assinatura: o de outro plano ou tipo também cai ao iniciar um novo.
+        not(
+          and(
+            eq(cobranca.tipo, filtro.tipo),
+            eq(cobranca.planoDestinoId, filtro.planoDestinoId),
+            condicaoReutilizavel(filtro),
+          )!,
+        ),
       ),
     )
     .returning();
